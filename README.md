@@ -207,7 +207,7 @@ Returns the next upcoming event from all active calendars.
 5. Copy the ID (format: name@gmail.com or a long string)
 
 For public calendars, you can also extract it from the embed URL:
-- URL: `https://calendar.google.com/calendar/embed?src=warsawwestiesdance%40gmail.com`
+- URL: `https://calendar.google.com/calendar/embed?src=yourcalendar%40gmail.com`
 - Calendar ID: `yourcalendar@gmail.com`
 
 ## Management
