@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gdzie na Westa? - Najbliższe Wydarzenie</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container" x-data="eventApp()" x-init="init()">
+        <!-- Header -->
+        <header class="header">
+            <h1>Gdzie na Westa?</h1>
+            <p class="subtitle">Najbliższe wydarzenie taneczne</p>
+        </header>
+
+        <!-- Loading State -->
+        <div x-show="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Ładowanie wydarzenia...</p>
+        </div>
+
+        <!-- Error State -->
+        <div x-show="error && !loading" class="error-card">
+            <div class="error-icon">⚠️</div>
+            <h2>Ups! Coś poszło nie tak</h2>
+            <p x-text="errorMessage"></p>
+            <button @click="loadEvent()" class="retry-btn">Spróbuj ponownie</button>
+        </div>
+
+        <!-- Event Card -->
+        <div x-show="event && !loading && !error" class="event-card">
+            <div class="event-header">
+                <div class="event-icon">🎵</div>
+                <h2 x-text="event?.title" class="event-title"></h2>
+            </div>
+
+            <div class="event-details">
+                <!-- Date & Time -->
+                <div class="detail-item">
+                    <div class="detail-icon">📅</div>
+                    <div class="detail-content">
+                        <div class="detail-label">Data i godzina</div>
+                        <div class="detail-value" x-text="formatDate(event?.start)"></div>
+                    </div>
+                </div>
+
+                <!-- Location -->
+                <div x-show="event?.location" class="detail-item">
+                    <div class="detail-icon">📍</div>
+                    <div class="detail-content">
+                        <div class="detail-label">Miejsce</div>
+                        <div class="detail-value" x-text="event?.location"></div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div x-show="event?.description" class="detail-item description">
+                    <div class="detail-icon">📝</div>
+                    <div class="detail-content">
+                        <div class="detail-label">Opis</div>
+                        <div class="detail-value" x-html="formatDescription(event?.description)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Countdown -->
+            <div class="countdown">
+                <div class="countdown-label">Za:</div>
+                <div class="countdown-value" x-text="getTimeUntil(event?.start)"></div>
+            </div>
+
+            <!-- Refresh Button -->
+            <button @click="loadEvent()" class="refresh-btn">
+                🔄 Odśwież
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Dane z kalendarzy Google Calendar</p>
+            <p class="last-update" x-show="lastUpdate">
+                Ostatnia aktualizacja: <span x-text="lastUpdate"></span>
+            </p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
