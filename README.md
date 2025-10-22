@@ -74,8 +74,16 @@ docker exec -it westnfound_backend_dev python manage.py createsuperuser
 docker exec -it westnfound_backend_prod python manage.py createsuperuser
 ```
 
-5. Add calendars:
-   - Open admin panel (dev: http://localhost:8000/admin/, prod: http://localhost/api/admin/)
+5. (Optional) Configure custom admin URL for security:
+```bash
+# In .env file
+DJANGO_ADMIN_URL=my-secret-admin-panel
+```
+
+6. Add calendars:
+   - Open admin panel:
+     - **Dev**: http://localhost:8000/admin/
+     - **Prod**: http://localhost/admin/ (or your custom URL from DJANGO_ADMIN_URL)
    - Login with your superuser account
    - Add new calendars in the "Calendars" section
    - For each calendar provide:
@@ -83,7 +91,7 @@ docker exec -it westnfound_backend_prod python manage.py createsuperuser
      - **Calendar ID**: e.g., "yourcalendar@gmail.com"
      - **Is active**: Check to enable the calendar
 
-6. Open the application:
+7. Open the application:
 
 **Development:**
    - Frontend: http://localhost/
@@ -93,7 +101,7 @@ docker exec -it westnfound_backend_prod python manage.py createsuperuser
 **Production:**
    - Frontend: http://localhost/
    - Backend API: http://localhost/api/next-event/ (through Nginx only)
-   - Admin panel: http://localhost/api/admin/
+   - Admin panel: http://localhost/admin/ (configurable via DJANGO_ADMIN_URL)
    - Health check: http://localhost/health
 
 ### Development vs Production
@@ -134,6 +142,26 @@ docker exec -it westnfound_backend_prod python manage.py createsuperuser
     ├── styles.css             # Styling
     └── nginx.conf             # Nginx configuration
 ```
+
+## Security
+
+### Custom Admin URL
+
+For production deployments, it's recommended to change the default `/admin/` URL to something less predictable:
+
+```bash
+# In .env file
+DJANGO_ADMIN_URL=my-secret-panel-xyz123
+```
+
+This helps protect against automated attacks targeting the default Django admin path.
+
+**Examples of custom admin URLs:**
+- `/my-secret-panel/`
+- `/dashboard-2024/`
+- `/control-xyz/`
+
+**Note**: The nginx configuration automatically proxies any URL containing "admin" or "panel" to the Django backend, so your custom URL will work as long as it contains one of these keywords.
 
 ## API
 
