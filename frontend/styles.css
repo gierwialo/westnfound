@@ -209,6 +209,17 @@ body {
     font-weight: 500;
 }
 
+.detail-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.detail-value-row .detail-value {
+    flex: 1;
+}
+
 .detail-item.description .detail-value {
     line-height: 1.6;
 }
@@ -221,6 +232,30 @@ body {
 
 .detail-value a:hover {
     text-decoration: underline;
+}
+
+/* Action Buttons */
+.action-btn {
+    padding: 8px 16px;
+    background: #e5e7eb;
+    color: #6b7280;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.action-btn:hover {
+    background: #d1d5db;
+    color: #4b5563;
+}
+
+.action-btn:active {
+    transform: scale(0.98);
 }
 
 /* Countdown */

@@ -97,6 +97,38 @@ function eventApp() {
             this.countdownInterval = setInterval(() => {
                 this.$nextTick();
             }, 60000);
+        },
+
+        addToCalendar() {
+            if (!this.event) return;
+
+            const startDate = new Date(this.event.start);
+            const endDate = new Date(this.event.end);
+
+            // Format dates for Google Calendar (YYYYMMDDTHHmmssZ)
+            const formatGoogleDate = (date) => {
+                return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+            };
+
+            // Build Google Calendar URL
+            const params = new URLSearchParams({
+                action: 'TEMPLATE',
+                text: this.event.title,
+                dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
+                details: this.event.description || '',
+                location: this.event.location || '',
+            });
+
+            const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
+            window.open(url, '_blank');
+        },
+
+        openNavigation() {
+            if (!this.event?.location) return;
+
+            // Google Maps URL with navigation
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(this.event.location)}`;
+            window.open(url, '_blank');
         }
     };
 }

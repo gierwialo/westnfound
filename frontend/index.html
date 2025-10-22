@@ -42,7 +42,12 @@
                     <div class="detail-icon">📅</div>
                     <div class="detail-content">
                         <div class="detail-label">Data i godzina</div>
-                        <div class="detail-value" x-text="formatDate(event?.start)"></div>
+                        <div class="detail-value-row">
+                            <span class="detail-value" x-text="formatDate(event?.start)"></span>
+                            <button @click="addToCalendar()" class="action-btn">
+                                📆 Dodaj do kalendarza
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -51,7 +56,12 @@
                     <div class="detail-icon">📍</div>
                     <div class="detail-content">
                         <div class="detail-label">Miejsce</div>
-                        <div class="detail-value" x-text="event?.location"></div>
+                        <div class="detail-value-row">
+                            <span class="detail-value" x-text="event?.location"></span>
+                            <button @click="openNavigation()" class="action-btn">
+                                🧭 Nawiguj
+                            </button>
+                        </div>
                     </div>
                 </div>
 
