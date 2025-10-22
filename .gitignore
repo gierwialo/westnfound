@@ -48,3 +48,7 @@ Thumbs.db
 
 # Docker
 *.pid
+
+# Deployment scripts
+post-deploy.sh
+*.backup
