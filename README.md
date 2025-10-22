@@ -24,6 +24,13 @@ A simple web application to display the next upcoming dance event from Google Ca
 - Docker
 - Docker Compose
 
+### Deployment Profiles
+
+The application supports two deployment profiles:
+
+1. **Development (`dev`)**: Django dev server + exposed backend port
+2. **Production (`prod`)**: Gunicorn + Nginx (backend not publicly accessible)
+
 ### Installation
 
 1. Clone the repository:
@@ -32,18 +39,43 @@ git clone <repository-url>
 cd gdzienawesta
 ```
 
-2. Start the application:
+2. (Optional) Configure ports in `.env`:
 ```bash
-docker-compose up -d
+cp .env.example .env
+# Edit .env to set FRONTEND_PORT (default: 80) and BACKEND_PORT (dev only, default: 8000)
 ```
 
-3. Create Django superuser:
+3. Start the application:
+
+**Development mode:**
 ```bash
-docker exec -it westnfound_backend python manage.py createsuperuser
+docker compose --profile dev up -d
 ```
 
-4. Add calendars:
-   - Open admin panel: http://localhost:8000/admin/
+**Production mode (recommended):**
+```bash
+docker compose --profile prod up -d
+```
+
+**Custom port example:**
+```bash
+FRONTEND_PORT=3000 docker compose --profile prod up -d
+```
+
+4. Create Django superuser:
+
+**Development:**
+```bash
+docker exec -it westnfound_backend_dev python manage.py createsuperuser
+```
+
+**Production:**
+```bash
+docker exec -it westnfound_backend_prod python manage.py createsuperuser
+```
+
+5. Add calendars:
+   - Open admin panel (dev: http://localhost:8000/admin/, prod: http://localhost/api/admin/)
    - Login with your superuser account
    - Add new calendars in the "Calendars" section
    - For each calendar provide:
@@ -51,10 +83,31 @@ docker exec -it westnfound_backend python manage.py createsuperuser
      - **Calendar ID**: e.g., "yourcalendar@gmail.com"
      - **Is active**: Check to enable the calendar
 
-5. Open the application:
+6. Open the application:
+
+**Development:**
    - Frontend: http://localhost/
-   - Backend API: http://localhost:8000/api/next-event/
+   - Backend API: http://localhost:8000/api/next-event/ (direct access)
    - Admin panel: http://localhost:8000/admin/
+
+**Production:**
+   - Frontend: http://localhost/
+   - Backend API: http://localhost/api/next-event/ (through Nginx only)
+   - Admin panel: http://localhost/api/admin/
+   - Health check: http://localhost/health
+
+### Development vs Production
+
+| Feature | Development | Production |
+|---------|-------------|------------|
+| Backend Server | Django dev server | Gunicorn (4 workers) |
+| Backend Port | Exposed (8000) | Internal only |
+| Frontend Server | Nginx | Nginx |
+| API Access | Direct + through Nginx | Through Nginx only |
+| DEBUG | True | False |
+| Auto-reload | Yes | No |
+| Security Headers | No | Yes |
+| Health Endpoint | No | Yes (/health) |
 
 ## Project Structure
 
