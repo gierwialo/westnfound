@@ -80,10 +80,17 @@ docker exec -it westnfound_backend_dev python manage.py createsuperuser
 docker exec -it westnfound_backend_prod python manage.py createsuperuser
 ```
 
-5. (Optional) Configure custom admin URL for security:
+5. (Optional) Configure production settings in `.env`:
 ```bash
-# In .env file
+# Custom admin URL for security
 DJANGO_ADMIN_URL=my-secret-admin-panel
+
+# For production deployment, configure CSRF trusted origins
+# This is REQUIRED when running behind a reverse proxy (Nginx)
+CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+
+# Optionally restrict allowed hosts
+ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 ```
 
 6. Add calendars:

@@ -13,6 +13,8 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
       - DEBUG=True
       - DJANGO_ADMIN_URL=${DJANGO_ADMIN_URL:-admin}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
     restart: unless-stopped
     profiles:
       - dev
@@ -30,6 +32,8 @@ services:
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
       - DEBUG=False
       - DJANGO_ADMIN_URL=${DJANGO_ADMIN_URL:-admin}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-*}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-}
     restart: unless-stopped
     profiles:
       - prod
