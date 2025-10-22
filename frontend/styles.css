@@ -286,6 +286,28 @@ body {
     font-size: 0.875rem;
 }
 
+.footer-love {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 15px 0 10px 0 !important;
+}
+
+.footer-links {
+    font-size: 0.875rem;
+    margin-top: 10px !important;
+    line-height: 1.6;
+}
+
+.footer-links a {
+    color: white;
+    text-decoration: underline;
+    transition: opacity 0.3s ease;
+}
+
+.footer-links a:hover {
+    opacity: 0.8;
+}
+
 /* Animations */
 @keyframes fadeIn {
     from {

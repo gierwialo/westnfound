@@ -2,6 +2,12 @@
 
 A simple web application to display the next upcoming dance event from Google Calendars.
 
+**z miłości do Westa❤️**
+
+## Contributing
+
+Have an idea or found an issue? Please [open an issue](https://github.com/gierwialo/westnfound/issues) on GitHub!
+
 ## Architecture
 
 - **Backend**: Django 5 + Google Calendar API + SQLite
