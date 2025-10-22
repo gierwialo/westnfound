@@ -42,7 +42,7 @@ The application supports two deployment profiles:
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd gdzienawesta
+cd westnfound
 ```
 
 2. (Optional) Configure ports in `.env`:
