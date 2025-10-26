@@ -38,13 +38,13 @@
 
             <div class="event-details">
                 <!-- Date & Time -->
-                <div class="detail-item">
+                <div class="detail-item" @click="toggleDetail('date')" :class="{ 'expanded': expandedDetails.date }">
                     <div class="detail-icon">📅</div>
                     <div class="detail-content">
                         <div class="detail-label">Data i godzina</div>
                         <div class="detail-value-row">
                             <span class="detail-value" x-text="formatDate(event?.start)"></span>
-                            <button @click="addToCalendar()" class="action-btn">
+                            <button @click.stop="addToCalendar()" class="action-btn">
                                 📆 Dodaj do kalendarza
                             </button>
                         </div>
@@ -52,13 +52,13 @@
                 </div>
 
                 <!-- Location -->
-                <div x-show="event?.location" class="detail-item">
+                <div x-show="event?.location" class="detail-item" @click="toggleDetail('location')" :class="{ 'expanded': expandedDetails.location }">
                     <div class="detail-icon">📍</div>
                     <div class="detail-content">
                         <div class="detail-label">Miejsce</div>
                         <div class="detail-value-row">
                             <span class="detail-value" x-text="event?.location"></span>
-                            <button @click="openNavigation()" class="action-btn">
+                            <button @click.stop="openNavigation()" class="action-btn">
                                 🧭 Nawiguj
                             </button>
                         </div>
@@ -66,7 +66,7 @@
                 </div>
 
                 <!-- Description -->
-                <div x-show="event?.description" class="detail-item description">
+                <div x-show="event?.description" class="detail-item description" @click="toggleDetail('description')" :class="{ 'expanded': expandedDetails.description }">
                     <div class="detail-icon">📝</div>
                     <div class="detail-content">
                         <div class="detail-label">Opis</div>
@@ -84,10 +84,6 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <p>Dane z kalendarzy Google Calendar</p>
-            <p class="last-update" x-show="lastUpdate">
-                Ostatnia aktualizacja: <span x-text="lastUpdate"></span>
-            </p>
             <p class="footer-love">z miłości do Westa❤️</p>
             <p class="footer-links">
                 Kod dostępny na <a href="https://github.com/gierwialo/westnfound" target="_blank" rel="noopener">GitHub</a><br>

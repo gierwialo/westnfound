@@ -286,17 +286,13 @@ body {
 .footer {
     text-align: center;
     color: white;
-    margin-top: 40px;
-    padding: 20px;
+    margin-top: 20px;
+    padding: 15px;
     opacity: 0.9;
 }
 
 .footer p {
     margin: 5px 0;
-}
-
-.last-update {
-    font-size: 0.875rem;
 }
 
 .footer-love {
@@ -397,10 +393,17 @@ body {
         text-align: left;
         padding: 12px;
         gap: 10px;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .detail-item:active {
+        background: #e5e7eb;
     }
 
     .detail-icon {
         margin: 0;
+        align-self: flex-start;
     }
 
     .detail-label {
@@ -417,6 +420,12 @@ body {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+    }
+
+    .detail-item.expanded .detail-value {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
     }
 
     .detail-value-row {
@@ -477,5 +486,10 @@ body {
     .countdown {
         padding: 15px;
         margin-bottom: 12px;
+    }
+
+    .footer {
+        margin-top: 8px;
+        padding: 8px;
     }
 }

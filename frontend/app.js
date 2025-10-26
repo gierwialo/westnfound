@@ -6,11 +6,20 @@ function eventApp() {
         errorMessage: '',
         lastUpdate: '',
         countdownInterval: null,
+        expandedDetails: {
+            date: false,
+            location: false,
+            description: false
+        },
 
         init() {
             this.loadEvent();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
+        },
+
+        toggleDetail(type) {
+            this.expandedDetails[type] = !this.expandedDetails[type];
         },
 
         async loadEvent() {
