@@ -71,6 +71,14 @@ function eventApp() {
             return formatted;
         },
 
+        isEventOngoing() {
+            if (!this.event) return false;
+            const now = new Date();
+            const startDate = new Date(this.event.start);
+            const endDate = new Date(this.event.end);
+            return now >= startDate && now < endDate;
+        },
+
         getTimeUntil() {
             if (!this.event) return '';
 
