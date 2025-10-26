@@ -56,7 +56,12 @@ function eventApp() {
         formatDescription(description) {
             if (!description) return '';
 
-            // Convert URLs to links
+            // If description already contains HTML tags, return as-is
+            if (/<[a-z][\s\S]*>/i.test(description)) {
+                return description.replace(/\n/g, '<br>');
+            }
+
+            // Convert URLs to links (only for plain text)
             const urlRegex = /(https?:\/\/[^\s]+)/g;
             let formatted = description.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
 
