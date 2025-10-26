@@ -50,5 +50,5 @@ Thumbs.db
 *.pid
 
 # Deployment scripts
-post-deploy.sh
+post-deploy.py
 *.backup
