@@ -393,17 +393,11 @@ body {
         text-align: left;
         padding: 12px;
         gap: 10px;
-        cursor: pointer;
-        transition: background 0.2s ease;
-    }
-
-    .detail-item:active {
-        background: #e5e7eb;
     }
 
     .detail-icon {
         margin: 0;
-        align-self: flex-start;
+        align-self: center;
     }
 
     .detail-label {
@@ -416,16 +410,16 @@ body {
     }
 
     .detail-value {
-        display: block;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
         overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
     }
 
-    .detail-item.expanded .detail-value {
-        white-space: normal;
+    .detail-item.description .detail-value {
+        display: block;
+        -webkit-line-clamp: unset;
         overflow: visible;
-        text-overflow: clip;
     }
 
     .detail-value-row {
