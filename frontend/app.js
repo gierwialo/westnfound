@@ -71,25 +71,35 @@ function eventApp() {
             return formatted;
         },
 
-        getTimeUntil(dateString) {
-            if (!dateString) return '';
+        getTimeUntil() {
+            if (!this.event) return '';
 
             const now = new Date();
-            const eventDate = new Date(dateString);
-            const diff = eventDate - now;
+            const startDate = new Date(this.event.start);
+            const endDate = new Date(this.event.end);
 
-            if (diff < 0) return 'Wydarzenie się już odbyło';
+            // Event is currently happening
+            if (now >= startDate && now < endDate) {
+                return 'właśnie trwa!';
+            }
 
-            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            // Event hasn't started yet - show countdown to start
+            if (now < startDate) {
+                const diff = startDate - now;
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
-            let result = [];
-            if (days > 0) result.push(`${days} dni`);
-            if (hours > 0) result.push(`${hours} godz.`);
-            if (minutes > 0 || result.length === 0) result.push(`${minutes} min.`);
+                let result = [];
+                if (days > 0) result.push(`${days} dni`);
+                if (hours > 0) result.push(`${hours} godz.`);
+                if (minutes > 0 || result.length === 0) result.push(`${minutes} min.`);
 
-            return result.join(', ');
+                return result.join(', ');
+            }
+
+            // Event has ended
+            return 'Wydarzenie się już odbyło';
         },
 
         startCountdown() {

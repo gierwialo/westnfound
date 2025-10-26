@@ -77,8 +77,8 @@
 
             <!-- Countdown -->
             <div class="countdown">
-                <div class="countdown-label">Za:</div>
-                <div class="countdown-value" x-text="getTimeUntil(event?.start)"></div>
+                <div class="countdown-label" x-show="getTimeUntil() !== 'właśnie trwa!'">Za:</div>
+                <div class="countdown-value" x-text="getTimeUntil()"></div>
             </div>
 
             <!-- Refresh Button -->
