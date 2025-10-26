@@ -1,9 +1,11 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, Dict, Any
 import requests
 import logging
 from icalendar import Calendar
 from dateutil import parser
+from django.utils import timezone as django_timezone
+import recurring_ical_events
 
 logger = logging.getLogger(__name__)
 
@@ -34,10 +36,19 @@ class GoogleCalendarService:
             # Parse iCal data
             cal = Calendar.from_ical(response.content)
 
-            now = datetime.now(timezone.utc)
+            # Use Django's configured timezone (from settings.TIME_ZONE)
+            now = django_timezone.now()
+
+            # Get all events (including recurring) for the next year
+            # recurring_ical_events expands RRULE to individual occurrences
+            events = recurring_ical_events.of(cal).between(
+                now,
+                now + timedelta(days=365)
+            )
+
             upcoming_events = []
 
-            for component in cal.walk():
+            for component in events:
                 if component.name == "VEVENT":
                     dtstart = component.get('dtstart')
                     if not dtstart:
@@ -50,11 +61,11 @@ class GoogleCalendarService:
                     if isinstance(start_dt, datetime):
                         # Ensure timezone awareness
                         if start_dt.tzinfo is None:
-                            start_dt = start_dt.replace(tzinfo=timezone.utc)
+                            start_dt = django_timezone.make_aware(start_dt)
                     else:
                         # It's a date, convert to datetime at midnight
                         from datetime import date, time
-                        start_dt = datetime.combine(start_dt, time.min).replace(tzinfo=timezone.utc)
+                        start_dt = django_timezone.make_aware(datetime.combine(start_dt, time.min))
 
                     # Only future events
                     if start_dt > now:
@@ -64,10 +75,10 @@ class GoogleCalendarService:
                             end_dt = dtend.dt
                             if isinstance(end_dt, datetime):
                                 if end_dt.tzinfo is None:
-                                    end_dt = end_dt.replace(tzinfo=timezone.utc)
+                                    end_dt = django_timezone.make_aware(end_dt)
                             else:
                                 from datetime import time
-                                end_dt = datetime.combine(end_dt, time.min).replace(tzinfo=timezone.utc)
+                                end_dt = django_timezone.make_aware(datetime.combine(end_dt, time.min))
 
                         event_data = {
                             'title': str(component.get('summary', 'Bez tytułu')),
