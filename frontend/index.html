@@ -11,22 +11,26 @@
     <div class="container" x-data="eventApp()" x-init="init()">
         <!-- Header -->
         <header class="header">
-            <h1>Gdzie na Westa?</h1>
-            <p class="subtitle">Najbliższe wydarzenie taneczne</p>
+            <div class="language-switcher">
+                <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
+                <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
+            </div>
+            <h1 x-text="t('title')"></h1>
+            <p class="subtitle" x-text="t('subtitle')"></p>
         </header>
 
         <!-- Loading State -->
         <div x-show="loading" class="loading">
             <div class="spinner"></div>
-            <p>Ładowanie wydarzenia...</p>
+            <p x-text="t('loading')"></p>
         </div>
 
         <!-- Error State -->
         <div x-show="error && !loading" class="error-card">
             <div class="error-icon">⚠️</div>
-            <h2>Ups! Coś poszło nie tak</h2>
+            <h2 x-text="t('errorTitle')"></h2>
             <p x-text="errorMessage"></p>
-            <button @click="loadEvent()" class="retry-btn">Spróbuj ponownie</button>
+            <button @click="loadEvent()" class="retry-btn" x-text="t('retryButton')"></button>
         </div>
 
         <!-- Event Card -->
@@ -41,12 +45,10 @@
                 <div class="detail-item">
                     <div class="detail-icon">📅</div>
                     <div class="detail-content">
-                        <div class="detail-label">Data i godzina</div>
+                        <div class="detail-label" x-text="t('dateTimeLabel')"></div>
                         <div class="detail-value-row">
                             <span class="detail-value" x-text="formatDate(event?.start)"></span>
-                            <button @click="addToCalendar()" class="action-btn">
-                                📆 Dodaj do kalendarza
-                            </button>
+                            <button @click="addToCalendar()" class="action-btn" x-text="t('addToCalendar')"></button>
                         </div>
                     </div>
                 </div>
@@ -55,12 +57,10 @@
                 <div x-show="event?.location" class="detail-item">
                     <div class="detail-icon">📍</div>
                     <div class="detail-content">
-                        <div class="detail-label">Miejsce</div>
+                        <div class="detail-label" x-text="t('locationLabel')"></div>
                         <div class="detail-value-row">
                             <span class="detail-value" x-text="event?.location"></span>
-                            <button @click="openNavigation()" class="action-btn">
-                                🧭 Nawiguj
-                            </button>
+                            <button @click="openNavigation()" class="action-btn" x-text="t('navigate')"></button>
                         </div>
                     </div>
                 </div>
@@ -69,7 +69,7 @@
                 <div x-show="event?.description" class="detail-item description">
                     <div class="detail-icon">📝</div>
                     <div class="detail-content">
-                        <div class="detail-label">Opis</div>
+                        <div class="detail-label" x-text="t('descriptionLabel')"></div>
                         <div class="detail-value" x-html="formatDescription(event?.description)"></div>
                     </div>
                 </div>
@@ -77,21 +77,22 @@
 
             <!-- Countdown -->
             <div class="countdown">
-                <div class="countdown-label" x-show="!isEventOngoing()">Za:</div>
+                <div class="countdown-label" x-show="!isEventOngoing()" x-text="t('countdownPrefix')"></div>
                 <div class="countdown-value" x-text="getTimeUntil()"></div>
             </div>
         </div>
 
         <!-- Footer -->
         <footer class="footer">
-            <p class="footer-love">z miłości do Westa❤️</p>
+            <p class="footer-love" x-text="t('footerLove')"></p>
             <p class="footer-links">
-                Kod dostępny na <a href="https://github.com/gierwialo/westnfound" target="_blank" rel="noopener">GitHub</a><br>
-                Masz pomysł lub uwagę? <a href="https://github.com/gierwialo/westnfound/issues" target="_blank" rel="noopener">Zgłoś tutaj</a>
+                <span x-text="t('footerCode')"></span> <a href="https://github.com/gierwialo/westnfound" target="_blank" rel="noopener">GitHub</a><br>
+                <span x-text="t('footerFeedback')"></span> <a href="https://github.com/gierwialo/westnfound/issues" target="_blank" rel="noopener" x-text="t('footerReport')"></a>
             </p>
         </footer>
     </div>
 
+    <script src="translations.js"></script>
     <script src="app.js"></script>
 </body>
 </html>

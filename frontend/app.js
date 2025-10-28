@@ -6,11 +6,42 @@ function eventApp() {
         errorMessage: '',
         lastUpdate: '',
         countdownInterval: null,
+        currentLang: 'pl',
 
         init() {
+            this.initLanguage();
             this.loadEvent();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
+        },
+
+        initLanguage() {
+            // Check localStorage first
+            const savedLang = localStorage.getItem('preferredLanguage');
+            if (savedLang && translations[savedLang]) {
+                this.currentLang = savedLang;
+            } else {
+                // Auto-detect browser language
+                const browserLang = navigator.language.split('-')[0]; // 'pl-PL' -> 'pl'
+                this.currentLang = translations[browserLang] ? browserLang : 'pl';
+            }
+            this.updateHtmlLang();
+        },
+
+        setLanguage(lang) {
+            if (translations[lang]) {
+                this.currentLang = lang;
+                localStorage.setItem('preferredLanguage', lang);
+                this.updateHtmlLang();
+            }
+        },
+
+        updateHtmlLang() {
+            document.documentElement.lang = this.currentLang;
+        },
+
+        t(key) {
+            return translations[this.currentLang]?.[key] || key;
         },
 
         async loadEvent() {
@@ -22,11 +53,11 @@ function eventApp() {
                 const data = await response.json();
 
                 if (!response.ok) {
-                    throw new Error(data.message || 'Błąd pobierania wydarzenia');
+                    throw new Error(data.message || this.t('errorDefault'));
                 }
 
                 this.event = data.event;
-                this.lastUpdate = new Date().toLocaleTimeString('pl-PL');
+                this.lastUpdate = new Date().toLocaleTimeString(this.currentLang + '-' + this.currentLang.toUpperCase());
                 this.startCountdown();
             } catch (err) {
                 this.error = true;
@@ -50,7 +81,8 @@ function eventApp() {
                 minute: '2-digit'
             };
 
-            return date.toLocaleDateString('pl-PL', options);
+            const locale = this.currentLang + '-' + this.currentLang.toUpperCase();
+            return date.toLocaleDateString(locale, options);
         },
 
         formatDescription(description) {
@@ -88,7 +120,7 @@ function eventApp() {
 
             // Event is currently happening
             if (now >= startDate && now < endDate) {
-                return 'właśnie trwa!';
+                return this.t('eventOngoing');
             }
 
             // Event hasn't started yet - show countdown to start
@@ -99,15 +131,15 @@ function eventApp() {
                 const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
                 let result = [];
-                if (days > 0) result.push(`${days} dni`);
-                if (hours > 0) result.push(`${hours} godz.`);
-                if (minutes > 0 || result.length === 0) result.push(`${minutes} min.`);
+                if (days > 0) result.push(`${days} ${this.t('days')}`);
+                if (hours > 0) result.push(`${hours} ${this.t('hours')}`);
+                if (minutes > 0 || result.length === 0) result.push(`${minutes} ${this.t('minutes')}`);
 
                 return result.join(', ');
             }
 
             // Event has ended
-            return 'Wydarzenie się już odbyło';
+            return this.t('eventEnded');
         },
 
         startCountdown() {

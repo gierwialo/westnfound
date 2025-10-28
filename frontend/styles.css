@@ -37,6 +37,7 @@ body {
     color: white;
     margin-bottom: 40px;
     animation: fadeInDown 0.6s ease-out;
+    position: relative;
 }
 
 .header h1 {
@@ -49,6 +50,41 @@ body {
 .header .subtitle {
     font-size: 1.25rem;
     opacity: 0.9;
+}
+
+/* Language Switcher */
+.language-switcher {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 5px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 5px;
+    border-radius: 25px;
+    backdrop-filter: blur(10px);
+}
+
+.lang-btn {
+    padding: 8px 16px;
+    background: transparent;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.lang-btn.active {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Loading */
@@ -357,6 +393,12 @@ body {
 
     .header .subtitle {
         display: none;
+    }
+
+    .language-switcher {
+        position: static;
+        justify-content: center;
+        margin-bottom: 15px;
     }
 
     .event-card {
