@@ -79,6 +79,12 @@ class GoogleCalendarService:
                             from datetime import time
                             end_dt = django_timezone.make_aware(datetime.combine(end_dt, time.min))
 
+                    # Skip events longer than 12 hours
+                    if end_dt:
+                        duration = end_dt - start_dt
+                        if duration > timedelta(hours=12):
+                            continue
+
                     # Show events that haven't ended yet (not just future events)
                     # Use end time if available, otherwise use start time
                     event_time = end_dt if end_dt else start_dt
