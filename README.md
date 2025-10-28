@@ -18,6 +18,9 @@ Have an idea or found an issue? Please [open an issue](https://github.com/gierwi
 
 - ✅ Support for multiple Google Calendars
 - ✅ Automatic display of the next upcoming event
+- ✅ Multi-language support (Polish & English)
+- ✅ Automatic language detection based on browser settings
+- ✅ Times displayed in user's local timezone
 - ✅ Beautiful, responsive interface
 - ✅ Countdown timer to the event
 - ✅ Django admin panel for calendar management
@@ -152,6 +155,7 @@ ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 └── frontend/
     ├── index.html             # Main page
     ├── app.js                 # Alpine.js logic
+    ├── translations.js        # Language translations (PL/EN)
     ├── styles.css             # Styling
     └── nginx.conf             # Nginx configuration
 ```
@@ -204,6 +208,22 @@ Returns the next upcoming event from all active calendars.
   "message": "No upcoming events found in calendars"
 }
 ```
+
+**Note:** Event times are returned in ISO 8601 format with UTC offset (e.g., `2025-10-25T19:00:00+02:00`). The frontend automatically displays these times in the user's local timezone.
+
+## Internationalization (i18n)
+
+The application supports multiple languages with automatic detection:
+
+- **Supported languages**: Polish (PL) and English (EN)
+- **Auto-detection**: Automatically detects browser language on first visit
+- **Language switcher**:
+  - Desktop: top-right corner of the page
+  - Mobile: inside event card, above event title
+- **Persistence**: User's language preference is saved in localStorage
+- **Timezone**: All times are displayed in user's local timezone
+
+To add more languages, edit `frontend/translations.js` and add new language objects.
 
 ## How to Get Calendar ID?
 
