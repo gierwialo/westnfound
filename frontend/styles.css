@@ -361,6 +361,12 @@ body {
     margin: 15px 0 10px 0 !important;
 }
 
+.footer-timezone {
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin: 5px 0 !important;
+}
+
 .footer-links {
     font-size: 0.875rem;
     margin-top: 10px !important;

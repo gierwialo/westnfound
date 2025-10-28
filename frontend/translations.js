@@ -40,7 +40,10 @@ const translations = {
 
         // Language
         language: "Język",
-        languageName: "Polski"
+        languageName: "Polski",
+
+        // Timezone
+        timezone: "Czasy wyświetlane w Twojej lokalnej strefie czasowej"
     },
     en: {
         // Header
@@ -83,6 +86,9 @@ const translations = {
 
         // Language
         language: "Language",
-        languageName: "English"
+        languageName: "English",
+
+        // Timezone
+        timezone: "Times displayed in your local timezone"
     }
 };
