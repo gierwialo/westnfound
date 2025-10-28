@@ -11,7 +11,7 @@
     <div class="container" x-data="eventApp()" x-init="init()">
         <!-- Header -->
         <header class="header">
-            <div class="language-switcher">
+            <div class="language-switcher language-switcher-desktop">
                 <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
                 <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
             </div>
@@ -35,6 +35,10 @@
 
         <!-- Event Card -->
         <div x-show="event && !loading && !error" class="event-card">
+            <div class="language-switcher language-switcher-mobile">
+                <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
+                <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
+            </div>
             <div class="event-header">
                 <div class="event-icon">🎵</div>
                 <h2 x-text="event?.title" class="event-title"></h2>

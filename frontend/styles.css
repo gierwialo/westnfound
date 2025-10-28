@@ -54,15 +54,39 @@ body {
 
 /* Language Switcher */
 .language-switcher {
-    position: absolute;
-    top: 0;
-    right: 0;
     display: flex;
     gap: 5px;
     background: rgba(255, 255, 255, 0.2);
     padding: 5px;
     border-radius: 25px;
     backdrop-filter: blur(10px);
+}
+
+.language-switcher-desktop {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.language-switcher-mobile {
+    display: none;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: var(--bg-light);
+    backdrop-filter: none;
+}
+
+.language-switcher-mobile .lang-btn {
+    color: var(--text-primary);
+}
+
+.language-switcher-mobile .lang-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.language-switcher-mobile .lang-btn.active {
+    background: var(--primary-color);
+    color: white;
 }
 
 .lang-btn {
@@ -395,10 +419,12 @@ body {
         display: none;
     }
 
-    .language-switcher {
-        position: static;
-        justify-content: center;
-        margin-bottom: 15px;
+    .language-switcher-desktop {
+        display: none;
+    }
+
+    .language-switcher-mobile {
+        display: flex;
     }
 
     .event-card {
