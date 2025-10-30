@@ -206,37 +206,79 @@ body {
     color: white;
     border: none;
     border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 1.8rem;
+    width: 55px;
+    height: 55px;
+    font-size: 2rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
     pointer-events: auto;
+    animation: pulse 3s ease-in-out 1s infinite;
 }
 
 .nav-prev {
-    left: -25px;
+    left: -27px;
+    animation: slideInFromLeft 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
 }
 
 .nav-next {
-    right: -25px;
+    right: -27px;
+    animation: slideInFromRight 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
 }
 
 .nav-btn:hover {
-    transform: translateY(-50%) scale(1.1);
-    box-shadow: 0 20px 30px rgba(99, 102, 241, 0.4);
+    transform: translateY(-50%) scale(1.15);
+    box-shadow: 0 12px 30px rgba(99, 102, 241, 0.6), 0 6px 15px rgba(0, 0, 0, 0.4);
+    animation-play-state: paused;
 }
 
 .nav-btn:active {
     transform: translateY(-50%) scale(0.95);
+}
+
+/* Navigation animations */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 8px 20px rgba(99, 102, 241, 0.5), 0 4px 10px rgba(0, 0, 0, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(99, 102, 241, 0.7), 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+}
+
+@keyframes slideInFromLeft {
+    0% {
+        left: -100px;
+        opacity: 0;
+    }
+    60% {
+        left: -22px;
+    }
+    100% {
+        left: -27px;
+        opacity: 1;
+    }
+}
+
+@keyframes slideInFromRight {
+    0% {
+        right: -100px;
+        opacity: 0;
+    }
+    60% {
+        right: -22px;
+    }
+    100% {
+        right: -27px;
+        opacity: 1;
+    }
 }
 
 .event-counter {
@@ -501,27 +543,58 @@ body {
     }
 
     .nav-btn {
-        width: 45px;
-        height: 45px;
-        font-size: 1.6rem;
+        width: 50px;
+        height: 50px;
+        font-size: 1.8rem;
         top: 200px;
         transform: none;
     }
 
+    .nav-prev {
+        left: -25px;
+        animation: slideInFromLeft 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
+    }
+
+    .nav-next {
+        right: -25px;
+        animation: slideInFromRight 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
+    }
+
     .nav-btn:hover {
         transform: scale(1.1);
+        animation-play-state: paused;
     }
 
     .nav-btn:active {
         transform: scale(0.95);
     }
 
-    .nav-prev {
-        left: -22px;
+    @keyframes slideInFromLeft {
+        0% {
+            left: -100px;
+            opacity: 0;
+        }
+        60% {
+            left: -20px;
+        }
+        100% {
+            left: -25px;
+            opacity: 1;
+        }
     }
 
-    .nav-next {
-        right: -22px;
+    @keyframes slideInFromRight {
+        0% {
+            right: -100px;
+            opacity: 0;
+        }
+        60% {
+            right: -20px;
+        }
+        100% {
+            right: -25px;
+            opacity: 1;
+        }
     }
 
     .event-counter {
@@ -631,27 +704,58 @@ body {
     }
 
     .nav-btn {
-        width: 40px;
-        height: 40px;
-        font-size: 1.4rem;
+        width: 45px;
+        height: 45px;
+        font-size: 1.6rem;
         top: 200px;
         transform: none;
     }
 
+    .nav-prev {
+        left: -22px;
+        animation: slideInFromLeft 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
+    }
+
+    .nav-next {
+        right: -22px;
+        animation: slideInFromRight 0.6s ease-out forwards, pulse 3s ease-in-out 1s infinite;
+    }
+
     .nav-btn:hover {
         transform: scale(1.1);
+        animation-play-state: paused;
     }
 
     .nav-btn:active {
         transform: scale(0.95);
     }
 
-    .nav-prev {
-        left: -20px;
+    @keyframes slideInFromLeft {
+        0% {
+            left: -100px;
+            opacity: 0;
+        }
+        60% {
+            left: -17px;
+        }
+        100% {
+            left: -22px;
+            opacity: 1;
+        }
     }
 
-    .nav-next {
-        right: -20px;
+    @keyframes slideInFromRight {
+        0% {
+            right: -100px;
+            opacity: 0;
+        }
+        60% {
+            right: -17px;
+        }
+        100% {
+            right: -22px;
+            opacity: 1;
+        }
     }
 
     .event-counter {
