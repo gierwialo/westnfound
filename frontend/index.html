@@ -45,9 +45,6 @@
                 <button @click="previousEvent()" :disabled="!hasPreviousEvent()" class="nav-btn nav-prev" aria-label="Previous event">
                     ‹
                 </button>
-                <div class="event-counter">
-                    <span x-text="currentEventIndex + 1"></span> / <span x-text="events.length"></span>
-                </div>
                 <button @click="nextEvent()" :disabled="!hasNextEvent()" class="nav-btn nav-next" aria-label="Next event">
                     ›
                 </button>
@@ -97,6 +94,11 @@
             <div class="countdown">
                 <div class="countdown-label" x-show="!isEventOngoing()" x-text="t('countdownPrefix')"></div>
                 <div class="countdown-value" x-text="getTimeUntil()"></div>
+            </div>
+
+            <!-- Event Counter -->
+            <div x-show="events.length > 1" class="event-counter">
+                <span x-text="currentEventIndex + 1"></span> / <span x-text="events.length"></span>
             </div>
         </div>
 
