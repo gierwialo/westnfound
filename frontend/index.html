@@ -39,6 +39,17 @@
                 <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
                 <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
             </div>
+
+            <!-- Event Navigation -->
+            <div x-show="events.length > 1" class="event-navigation">
+                <button x-show="hasPreviousEvent()" @click="previousEvent()" class="nav-btn nav-prev" aria-label="Previous event">
+                    ‹
+                </button>
+                <button x-show="hasNextEvent()" @click="nextEvent()" class="nav-btn nav-next" aria-label="Next event">
+                    ›
+                </button>
+            </div>
+
             <div class="event-header">
                 <div class="event-icon">🎵</div>
                 <h2 x-text="event?.title" class="event-title"></h2>
@@ -83,6 +94,11 @@
             <div class="countdown">
                 <div class="countdown-label" x-show="!isEventOngoing()" x-text="t('countdownPrefix')"></div>
                 <div class="countdown-value" x-text="getTimeUntil()"></div>
+            </div>
+
+            <!-- Event Counter -->
+            <div x-show="events.length > 1" class="event-counter">
+                <span x-text="currentEventIndex + 1"></span> / <span x-text="events.length"></span>
             </div>
         </div>
 
