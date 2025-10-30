@@ -1,18 +1,77 @@
 function eventApp() {
     return {
-        event: null,
+        events: [],
+        currentEventIndex: 0,
         loading: true,
         error: false,
         errorMessage: '',
         lastUpdate: '',
         countdownInterval: null,
         currentLang: 'pl',
+        touchStartX: 0,
+        touchEndX: 0,
+
+        get event() {
+            return this.events[this.currentEventIndex] || null;
+        },
 
         init() {
             this.initLanguage();
             this.loadEvent();
+            this.initSwipeHandlers();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
+        },
+
+        initSwipeHandlers() {
+            const container = document.querySelector('.event-card');
+            if (!container) return;
+
+            container.addEventListener('touchstart', (e) => {
+                this.touchStartX = e.changedTouches[0].screenX;
+            });
+
+            container.addEventListener('touchend', (e) => {
+                this.touchEndX = e.changedTouches[0].screenX;
+                this.handleSwipe();
+            });
+        },
+
+        handleSwipe() {
+            const swipeThreshold = 50;
+            const diff = this.touchStartX - this.touchEndX;
+
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe left - next event
+                    this.nextEvent();
+                } else {
+                    // Swipe right - previous event
+                    this.previousEvent();
+                }
+            }
+        },
+
+        nextEvent() {
+            if (this.currentEventIndex < this.events.length - 1) {
+                this.currentEventIndex++;
+                this.startCountdown();
+            }
+        },
+
+        previousEvent() {
+            if (this.currentEventIndex > 0) {
+                this.currentEventIndex--;
+                this.startCountdown();
+            }
+        },
+
+        hasNextEvent() {
+            return this.currentEventIndex < this.events.length - 1;
+        },
+
+        hasPreviousEvent() {
+            return this.currentEventIndex > 0;
         },
 
         initLanguage() {
@@ -49,16 +108,20 @@ function eventApp() {
             this.error = false;
 
             try {
-                const response = await fetch('/api/next-event/');
+                const response = await fetch('/api/next-events/?limit=3');
                 const data = await response.json();
 
                 if (!response.ok) {
                     throw new Error(data.message || this.t('errorDefault'));
                 }
 
-                this.event = data.event;
+                this.events = data.events || [];
+                this.currentEventIndex = 0;
                 this.lastUpdate = new Date().toLocaleTimeString(this.currentLang + '-' + this.currentLang.toUpperCase());
                 this.startCountdown();
+
+                // Re-initialize swipe handlers after DOM update
+                this.$nextTick(() => this.initSwipeHandlers());
             } catch (err) {
                 this.error = true;
                 this.errorMessage = err.message;
