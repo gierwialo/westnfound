@@ -230,18 +230,13 @@ body {
     right: -25px;
 }
 
-.nav-btn:hover:not(:disabled) {
+.nav-btn:hover {
     transform: translateY(-50%) scale(1.1);
     box-shadow: 0 20px 30px rgba(99, 102, 241, 0.4);
 }
 
-.nav-btn:active:not(:disabled) {
+.nav-btn:active {
     transform: translateY(-50%) scale(0.95);
-}
-
-.nav-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
 }
 
 .event-counter {
@@ -509,6 +504,16 @@ body {
         width: 45px;
         height: 45px;
         font-size: 1.6rem;
+        top: 200px;
+        transform: none;
+    }
+
+    .nav-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .nav-btn:active {
+        transform: scale(0.95);
     }
 
     .nav-prev {
@@ -629,6 +634,16 @@ body {
         width: 40px;
         height: 40px;
         font-size: 1.4rem;
+        top: 200px;
+        transform: none;
+    }
+
+    .nav-btn:hover {
+        transform: scale(1.1);
+    }
+
+    .nav-btn:active {
+        transform: scale(0.95);
     }
 
     .nav-prev {

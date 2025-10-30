@@ -42,10 +42,10 @@
 
             <!-- Event Navigation -->
             <div x-show="events.length > 1" class="event-navigation">
-                <button @click="previousEvent()" :disabled="!hasPreviousEvent()" class="nav-btn nav-prev" aria-label="Previous event">
+                <button x-show="hasPreviousEvent()" @click="previousEvent()" class="nav-btn nav-prev" aria-label="Previous event">
                     ‹
                 </button>
-                <button @click="nextEvent()" :disabled="!hasNextEvent()" class="nav-btn nav-next" aria-label="Next event">
+                <button x-show="hasNextEvent()" @click="nextEvent()" class="nav-btn nav-next" aria-label="Next event">
                     ›
                 </button>
             </div>
