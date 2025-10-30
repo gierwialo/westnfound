@@ -90,7 +90,7 @@ class GoogleCalendarService:
                     event_time = end_dt if end_dt else start_dt
                     if event_time > now:
                         event_data = {
-                            'title': str(component.get('summary', 'Bez tytułu')),
+                            'title': str(component.get('summary', 'Untitled')),
                             'description': str(component.get('description', '')),
                             'location': str(component.get('location', '')),
                             'start': start_dt.isoformat(),
@@ -212,7 +212,7 @@ class GoogleCalendarService:
                         event_time = end_dt if end_dt else start_dt
                         if event_time > now:
                             event_data = {
-                                'title': str(component.get('summary', 'Bez tytułu')),
+                                'title': str(component.get('summary', 'Untitled')),
                                 'description': str(component.get('description', '')),
                                 'location': str(component.get('location', '')),
                                 'start': start_dt.isoformat(),

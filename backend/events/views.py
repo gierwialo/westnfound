@@ -17,8 +17,8 @@ class NextEventView(View):
 
             if not active_calendars.exists():
                 return JsonResponse({
-                    'error': 'Brak aktywnych kalendarzy',
-                    'message': 'Dodaj kalendarze w panelu administracyjnym'
+                    'error': 'No active calendars',
+                    'message': 'Add calendars in the admin panel'
                 }, status=404)
 
             # Get calendar IDs
@@ -30,8 +30,8 @@ class NextEventView(View):
 
             if not event:
                 return JsonResponse({
-                    'error': 'Brak nadchodzących wydarzeń',
-                    'message': 'Nie znaleziono żadnych nadchodzących wydarzeń w kalendarzach'
+                    'error': 'No upcoming events',
+                    'message': 'No upcoming events found in calendars'
                 }, status=404)
 
             return JsonResponse({
@@ -42,7 +42,7 @@ class NextEventView(View):
         except Exception as e:
             logger.error(f"Error in NextEventView: {str(e)}")
             return JsonResponse({
-                'error': 'Błąd serwera',
+                'error': 'Server error',
                 'message': str(e)
             }, status=500)
 
@@ -57,8 +57,8 @@ class NextEventsView(View):
 
             if not active_calendars.exists():
                 return JsonResponse({
-                    'error': 'Brak aktywnych kalendarzy',
-                    'message': 'Dodaj kalendarze w panelu administracyjnym'
+                    'error': 'No active calendars',
+                    'message': 'Add calendars in the admin panel'
                 }, status=404)
 
             # Get limit parameter from query string (default: 3)
@@ -78,8 +78,8 @@ class NextEventsView(View):
 
             if not events:
                 return JsonResponse({
-                    'error': 'Brak nadchodzących wydarzeń',
-                    'message': 'Nie znaleziono żadnych nadchodzących wydarzeń w kalendarzach'
+                    'error': 'No upcoming events',
+                    'message': 'No upcoming events found in calendars'
                 }, status=404)
 
             return JsonResponse({
@@ -91,6 +91,6 @@ class NextEventsView(View):
         except Exception as e:
             logger.error(f"Error in NextEventsView: {str(e)}")
             return JsonResponse({
-                'error': 'Błąd serwera',
+                'error': 'Server error',
                 'message': str(e)
             }, status=500)
