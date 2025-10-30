@@ -10,6 +10,7 @@ function eventApp() {
         currentLang: 'pl',
         touchStartX: 0,
         touchEndX: 0,
+        swipeHandlersInitialized: false,
 
         get event() {
             return this.events[this.currentEventIndex] || null;
@@ -18,12 +19,14 @@ function eventApp() {
         init() {
             this.initLanguage();
             this.loadEvent();
-            this.initSwipeHandlers();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
         },
 
         initSwipeHandlers() {
+            // Only initialize once to prevent duplicate event listeners
+            if (this.swipeHandlersInitialized) return;
+
             const container = document.querySelector('.event-card');
             if (!container) return;
 
@@ -35,6 +38,8 @@ function eventApp() {
                 this.touchEndX = e.changedTouches[0].screenX;
                 this.handleSwipe();
             });
+
+            this.swipeHandlersInitialized = true;
         },
 
         handleSwipe() {
