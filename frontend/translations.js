@@ -37,6 +37,8 @@ const translations = {
         footerCode: "Kod dostępny na",
         footerFeedback: "Masz pomysł lub uwagę?",
         footerReport: "Zgłoś tutaj",
+        footerCalendarDirect: "Bezpośredni link do kalendarza",
+        calendarPath: "kalendarz",
 
         // Language
         language: "Język",
@@ -83,6 +85,8 @@ const translations = {
         footerCode: "Code available on",
         footerFeedback: "Have an idea or feedback?",
         footerReport: "Report here",
+        footerCalendarDirect: "Direct calendar link",
+        calendarPath: "calendar",
 
         // Language
         language: "Language",
