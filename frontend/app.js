@@ -11,13 +11,26 @@ function eventApp() {
         touchStartX: 0,
         touchEndX: 0,
         swipeHandlersInitialized: false,
+        unknownCity: false,
+        cities: [],
 
         get event() {
             return this.events[this.currentEventIndex] || null;
         },
 
+        get currentCity() {
+            return this.cities.find(city => city.is_current) || null;
+        },
+
+        get namedCity() {
+            // Saying "Warszawa" when Warsaw is the only city we have adds
+            // nothing; the name earns its place once there is a choice.
+            return this.cities.length > 1 ? this.currentCity : null;
+        },
+
         init() {
             this.initLanguage();
+            this.loadCities();
             this.loadEvent();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
@@ -97,6 +110,7 @@ function eventApp() {
                 this.currentLang = lang;
                 localStorage.setItem('preferredLanguage', lang);
                 this.updateHtmlLang();
+                this.updateTitle();
             }
         },
 
@@ -104,17 +118,45 @@ function eventApp() {
             document.documentElement.lang = this.currentLang;
         },
 
+        updateTitle() {
+            const city = this.namedCity;
+            document.title = city
+                ? `${this.t('title')} - ${city.name}`
+                : this.t('title');
+        },
+
         t(key) {
             return translations[this.currentLang]?.[key] || key;
+        },
+
+        async loadCities() {
+            try {
+                const response = await fetch('/api/cities/');
+                const data = await response.json();
+                this.cities = data.cities || [];
+                this.updateTitle();
+            } catch (err) {
+                // The footer and the unknown-city page degrade to nothing;
+                // never let this break the event card.
+                console.error('Error loading cities:', err);
+            }
         },
 
         async loadEvent() {
             this.loading = true;
             this.error = false;
+            this.unknownCity = false;
 
             try {
                 const response = await fetch('/api/next-events/?limit=3');
                 const data = await response.json();
+
+                if (data.error === 'Unknown city') {
+                    // The address names a city we do not serve. Not an error
+                    // the visitor can retry out of, so it gets its own state.
+                    this.unknownCity = true;
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error(data.message || this.t('errorDefault'));

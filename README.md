@@ -1,366 +1,116 @@
 # West Coast Swing Event Finder 🎵
 
-A simple web application to display the next upcoming dance event from Google Calendars.
+Shows what is on next for dancers in a given city, straight from a public
+Google Calendar. Runs at [gdzienawesta.com](https://gdzienawesta.com).
 
 **z miłości do Westa❤️**
 
-## Contributing
+## What it does
 
-Have an idea or found an issue? Please [open an issue](https://github.com/gierwialo/westnfound/issues) on GitHub!
+- **One city per subdomain.** The bare domain serves the default city;
+  `<city>.example.com` serves that city's events. An address that names no
+  configured city says so and lists the ones that exist.
+- **The next three events**, swipeable, with a live countdown and buttons to
+  add the event to a calendar or navigate to the venue.
+- **`/kalendarz` and `/calendar`** send you to the current city's Google
+  Calendar, so you can subscribe to it in your own.
+- **Polish and English**, detected from the browser and switchable, with a
+  preference remembered between visits.
+- **Times in the visitor's own timezone**, wherever they are.
+- **Cities are added in the admin panel**, not by a deploy.
 
-## Architecture
+## How it works
 
-- **Backend**: Django 5 + Google Calendar API + SQLite
-- **Frontend**: HTML + Alpine.js + CSS (no Node.js!)
-- **Deploy**: Docker Compose
+No Google API keys and no OAuth: events come from each calendar's **public
+iCal feed** (`calendar.google.com/calendar/ical/<id>/public/basic.ics`), which
+is parsed server-side with `icalendar` + `recurring_ical_events` so recurring
+events, cancellations and per-occurrence changes all land correctly.
 
-## Features
+Which city a request is for is decided from the `Host` header
+(`events/middleware.py`); an unrecognised host falls back to the default city,
+so hitting the server directly behaves the same as the bare domain.
 
-- ✅ Support for multiple Google Calendars
-- ✅ Automatic display of the next upcoming event
-- ✅ Multi-language support (Polish & English)
-- ✅ Automatic language detection based on browser settings
-- ✅ Times displayed in user's local timezone
-- ✅ Beautiful, responsive interface
-- ✅ Countdown timer to the event
-- ✅ Django admin panel for calendar management
-- ✅ Lightweight architecture (no PostgreSQL, no Node.js)
+| Layer | Stack |
+|---|---|
+| Backend | Django 5, SQLite |
+| Frontend | HTML + Alpine.js + CSS, no build step and no Node.js |
+| Deploy | Docker Compose, nginx in front |
 
-## Quick Start
+## Quick start
 
-### Requirements
+Requires Docker and Docker Compose.
 
-- Docker
-- Docker Compose
-
-### Deployment Profiles
-
-The application supports two deployment profiles:
-
-1. **Development (`dev`)**: Django dev server + exposed backend port
-2. **Production (`prod`)**: Gunicorn + Nginx (backend not publicly accessible)
-
-### Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/gierwialo/westnfound.git
 cd westnfound
-```
+cp .env.example .env          # optional: ports, admin URL, secret key
 
-2. (Optional) Configure ports in `.env`:
-```bash
-cp .env.example .env
-# Edit .env to set FRONTEND_PORT (default: 80) and BACKEND_PORT (dev only, default: 8000)
-```
-
-3. Start the application:
-
-**Development mode:**
-```bash
-docker compose --profile dev up -d
-```
-
-**Production mode (recommended):**
-```bash
 docker compose --profile prod up -d
-```
-
-**Custom port example:**
-```bash
-FRONTEND_PORT=3000 docker compose --profile prod up -d
-```
-
-4. Create Django superuser:
-
-**Development:**
-```bash
-docker exec -it westnfound_backend_dev python manage.py createsuperuser
-```
-
-**Production:**
-```bash
 docker exec -it westnfound_backend_prod python manage.py createsuperuser
 ```
 
-5. (Optional) Configure production settings in `.env`:
-```bash
-# Custom admin URL for security
-DJANGO_ADMIN_URL=my-secret-admin-panel
+Open the admin panel at `http://localhost/admin/` and add your first city:
 
-# For production deployment, configure CSRF trusted origins
-# This is REQUIRED when running behind a reverse proxy (Nginx)
-CSRF_TRUSTED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+| Field | Meaning |
+|---|---|
+| **Name** | City name as displayed, diacritics and all |
+| **Slug** | Subdomain label, ASCII, used as `<slug>.example.com`. Filled in from the name; **changing it breaks every link already shared** |
+| **Calendar ID** | From Google Calendar → Settings → Integrate calendar |
+| **Is default** | The city served on the bare domain. Exactly one city has this |
+| **Is active** | Uncheck to hide a city without deleting it |
 
-# Optionally restrict allowed hosts
-ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
-```
+The site is then at `http://localhost/`.
 
-6. Add calendars:
-   - Open admin panel:
-     - **Dev**: http://localhost:8000/admin/
-     - **Prod**: http://localhost/admin/ (or your custom URL from DJANGO_ADMIN_URL)
-   - Login with your superuser account
-   - Add new calendars in the "Calendars" section
-   - For each calendar provide:
-     - **Name**: e.g., "Warsaw Westies Dance"
-     - **Calendar ID**: e.g., "yourcalendar@gmail.com"
-     - **Is active**: Check to enable the calendar
+For a development server with auto-reload and the backend port exposed, use
+`--profile dev` instead and see [docs/deployment.md](docs/deployment.md).
 
-7. Open the application:
+## Subdomains
 
-**Development:**
-   - Frontend: http://localhost/
-   - Backend API: http://localhost:8000/api/next-event/ (direct access)
-   - Admin panel: http://localhost:8000/admin/
+Serving `<city>.example.com` needs a wildcard DNS record, a certificate
+covering it, and the base domain listed in `CITY_BASE_DOMAINS`. Subdomains can
+be exercised locally without touching `/etc/hosts` — see
+[docs/deployment.md](docs/deployment.md).
 
-**Production:**
-   - Frontend: http://localhost/
-   - Backend API: http://localhost/api/next-event/ (through Nginx only)
-   - Admin panel: http://localhost/admin/ (configurable via DJANGO_ADMIN_URL)
-   - Health check: http://localhost/health
-
-### Development vs Production
-
-| Feature | Development | Production |
-|---------|-------------|------------|
-| Backend Server | Django dev server | Gunicorn (4 workers) |
-| Backend Port | Exposed (8000) | Internal only |
-| Frontend Server | Nginx | Nginx |
-| API Access | Direct + through Nginx | Through Nginx only |
-| DEBUG | True | False |
-| Auto-reload | Yes | No |
-| Security Headers | No | Yes |
-| Health Endpoint | No | Yes (/health) |
-
-## Project Structure
+## Project structure
 
 ```
-.
-├── docker-compose.yml          # Docker Compose configuration
+├── docker-compose.yml
 ├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── manage.py
-│   ├── westnfound/            # Django configuration
-│   │   ├── settings.py
-│   │   ├── urls.py
-│   │   └── ...
-│   └── events/                # Events app
-│       ├── models.py          # Calendar model
-│       ├── services.py        # Google Calendar API integration
-│       ├── views.py           # API endpoint
-│       ├── admin.py           # Admin panel
-│       └── urls.py
-└── frontend/
-    ├── index.html             # Main page
-    ├── app.js                 # Alpine.js logic
-    ├── translations.js        # Language translations (PL/EN)
-    ├── styles.css             # Styling
-    └── nginx.conf             # Nginx configuration
+│   ├── events/
+│   │   ├── models.py       # City: name, slug, calendar id, default flag
+│   │   ├── middleware.py   # Host header -> city
+│   │   ├── services.py     # iCal fetching and recurrence expansion
+│   │   ├── views.py        # API endpoints and calendar redirects
+│   │   ├── slugs.py        # city name -> ASCII subdomain label
+│   │   └── tests.py
+│   └── westnfound/         # Django settings and URLs
+├── frontend/
+│   ├── index.html
+│   ├── app.js              # Alpine.js logic
+│   ├── translations.js     # PL/EN strings
+│   ├── styles.css
+│   ├── nginx.dev.conf
+│   └── nginx.prod.conf
+└── scripts/
+    └── stamp-assets.py     # cache-busting version stamps for CSS and JS
 ```
 
-## Security
-
-### Custom Admin URL
-
-For production deployments, it's recommended to change the default `/admin/` URL to something less predictable:
+## Tests
 
 ```bash
-# In .env file
-DJANGO_ADMIN_URL=my-secret-panel-xyz123
+docker exec -it westnfound_backend_prod python manage.py test events
 ```
 
-This helps protect against automated attacks targeting the default Django admin path.
+## Documentation
 
-**Examples of custom admin URLs:**
-- `/my-secret-panel/`
-- `/dashboard-2024/`
-- `/control-xyz/`
+- [docs/deployment.md](docs/deployment.md) — profiles, configuration, deploying an update, troubleshooting
+- [docs/api.md](docs/api.md) — endpoint reference
+- [SECURITY.md](SECURITY.md) — reporting a vulnerability
 
-**Note**: The nginx configuration automatically proxies any URL containing "admin" or "panel" to the Django backend, so your custom URL will work as long as it contains one of these keywords.
+## Contributing
 
-## API
-
-### GET /api/next-event/
-
-Returns the next upcoming event from all active calendars.
-
-**Success response (200):**
-```json
-{
-  "success": true,
-  "event": {
-    "title": "Warsaw Westies Social",
-    "description": "Weekly dance social...",
-    "location": "Studio XYZ, Warsaw",
-    "start": "2025-10-25T19:00:00+02:00",
-    "end": "2025-10-25T23:00:00+02:00",
-    "calendar_id": "yourcalendar@gmail.com"
-  }
-}
-```
-
-**Error response (404):**
-```json
-{
-  "error": "No upcoming events",
-  "message": "No upcoming events found in calendars"
-}
-```
-
-**Note:** Event times are returned in ISO 8601 format with UTC offset (e.g., `2025-10-25T19:00:00+02:00`). The frontend automatically displays these times in the user's local timezone.
-
-## Internationalization (i18n)
-
-The application supports multiple languages with automatic detection:
-
-- **Supported languages**: Polish (PL) and English (EN)
-- **Auto-detection**: Automatically detects browser language on first visit
-- **Language switcher**:
-  - Desktop: top-right corner of the page
-  - Mobile: inside event card, above event title
-- **Persistence**: User's language preference is saved in localStorage
-- **Timezone**: All times are displayed in user's local timezone
-
-To add more languages, edit `frontend/translations.js` and add new language objects.
-
-## How to Get Calendar ID?
-
-1. Open Google Calendar in your browser
-2. Click on the calendar you want to add
-3. Go to calendar settings
-4. Find "Calendar ID" in the "Integrate calendar" section
-5. Copy the ID (format: name@gmail.com or a long string)
-
-For public calendars, you can also extract it from the embed URL:
-- URL: `https://calendar.google.com/calendar/embed?src=yourcalendar%40gmail.com`
-- Calendar ID: `yourcalendar@gmail.com`
-
-## Management
-
-### Check logs
-
-```bash
-# All services
-docker-compose logs -f
-
-# Backend only
-docker-compose logs -f backend
-
-# Frontend only
-docker-compose logs -f frontend
-```
-
-### Restart application
-
-```bash
-docker-compose restart
-```
-
-### Stop application
-
-```bash
-docker-compose down
-```
-
-### Update code
-
-```bash
-docker-compose down
-git pull
-docker-compose up -d --build
-```
-
-## Configuration
-
-### Environment variables (docker-compose.yml)
-
-Backend:
-- `DJANGO_SECRET_KEY`: Django security key (change in production!)
-- `DEBUG`: Debug mode (False in production)
-
-### Production
-
-Before deploying to production:
-
-1. Change `DJANGO_SECRET_KEY` to a random, strong key
-2. Set `DEBUG=False`
-3. Configure `ALLOWED_HOSTS` in `westnfound/settings.py`
-4. Add proper CORS settings if needed
-5. Consider using an external database (PostgreSQL)
-6. Configure SSL/HTTPS
-
-## Development
-
-### Adding new calendars
-
-Calendars can be added in two ways:
-
-1. **Through admin panel** (recommended):
-   - http://localhost:8000/admin/events/calendar/
-
-2. **Through Django shell**:
-```bash
-docker exec -it westnfound_backend python manage.py shell
-```
-```python
-from events.models import Calendar
-Calendar.objects.create(
-    name="New Calendar",
-    calendar_id="new@gmail.com",
-    is_active=True
-)
-```
-
-### Local development without Docker
-
-Backend:
-```bash
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
-
-Frontend - just open `frontend/index.html` in your browser or use a simple HTTP server:
-```bash
-cd frontend
-python -m http.server 3000
-```
-
-## Troubleshooting
-
-### No events in calendar
-
-- Check if the Calendar ID is correct
-- Make sure the calendar is public
-- Check if the calendar has upcoming events
-- Check logs: `docker-compose logs backend`
-
-### CORS error
-
-If frontend and backend are on different domains, configure CORS in `westnfound/settings.py`:
-```python
-CORS_ALLOWED_ORIGINS = [
-    "https://your-domain.com",
-]
-```
-
-### Port already in use
-
-If ports 80 or 8000 are already in use, change them in `docker-compose.yml`:
-```yaml
-ports:
-  - "8080:8000"  # Backend on port 8080
-  - "3000:80"    # Frontend on port 3000
-```
+Have an idea or found a problem? [Open an issue](https://github.com/gierwialo/westnfound/issues).
 
 ## License
 
 MIT
-
-## Contact
-
-Questions? Open an issue on GitHub!

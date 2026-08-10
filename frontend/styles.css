@@ -788,3 +788,64 @@ body {
         padding: 8px;
     }
 }
+
+/* Unknown city: the list of cities we do serve, and the way in for a new one */
+.city-list {
+    margin: 16px 0 8px;
+    line-height: 1.9;
+}
+
+.city-list a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.city-list a:hover {
+    text-decoration: underline;
+}
+
+.city-add {
+    margin-top: 12px;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
+
+/* Which city you are looking at, in the header and in the footer */
+.city-current {
+    font-weight: 600;
+}
+
+.footer-cities {
+    margin-top: 8px;
+}
+
+.footer-cities a {
+    color: inherit;
+    text-decoration: underline;
+}
+
+/* Footer: cities lead, project plumbing recedes */
+.footer-cities {
+    margin-top: 10px;
+}
+
+.footer-cities a.city-current {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* The quiet end of the footer. The timezone note used to sit between the
+   bold sign-off and the links, where it had nothing its own size to sit
+   next to; grouped with the project links it reads as a footnote. */
+.footer-fineprint {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 0.88em;
+    opacity: 0.75;
+}
+
+.footer-fineprint .footer-links {
+    margin-top: 0 !important;
+}

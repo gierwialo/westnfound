@@ -7,6 +7,10 @@ const translations = {
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
         errorTitle: "Ups! Coś poszło nie tak",
+        footerCities: "Miasta:",
+        unknownCityTitle: "Ojej, jeszcze nie wiemy, co się tam tańczy",
+        unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy:",
+        addYourCity: "Dodaj swoje miasto",
         errorDefault: "Błąd pobierania wydarzenia",
         retryButton: "Spróbuj ponownie",
 
@@ -38,6 +42,8 @@ const translations = {
         footerFeedback: "Masz pomysł lub uwagę?",
         footerReport: "Zgłoś tutaj",
         footerCalendarDirect: "Bezpośredni link do kalendarza",
+        footerApp: "Aplikacja na telefon",
+        footerThanks: "Podziękowania",
         calendarPath: "kalendarz",
 
         // Language
@@ -55,6 +61,10 @@ const translations = {
         // Loading & Error states
         loading: "Loading event...",
         errorTitle: "Oops! Something went wrong",
+        footerCities: "Cities:",
+        unknownCityTitle: "Oh! We don't know what's dancing there yet",
+        unknownCityBody: "Maybe nobody has told us yet. Cities we're already dancing in:",
+        addYourCity: "Add your city (in Polish)",
         errorDefault: "Error loading event",
         retryButton: "Try again",
 
@@ -86,6 +96,8 @@ const translations = {
         footerFeedback: "Have an idea or feedback?",
         footerReport: "Report here",
         footerCalendarDirect: "Direct calendar link",
+        footerApp: "Mobile app",
+        footerThanks: "Thanks",
         calendarPath: "calendar",
 
         // Language

@@ -16,13 +16,36 @@
                 <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
             </div>
             <h1 x-text="t('title')"></h1>
-            <p class="subtitle" x-text="t('subtitle')"></p>
+            <p class="subtitle">
+                <span x-text="t('subtitle')"></span><template x-if="namedCity"><span> &middot; <span class="city-current" x-text="namedCity.name"></span></span></template>
+            </p>
         </header>
 
         <!-- Loading State -->
         <div x-show="loading" class="loading">
             <div class="spinner"></div>
             <p x-text="t('loading')"></p>
+        </div>
+
+        <!-- Unknown City State -->
+        <div x-show="unknownCity && !loading" class="error-card">
+            <div class="language-switcher language-switcher-mobile">
+                <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
+                <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
+            </div>
+            <div class="error-icon">🗺️</div>
+            <h2 x-text="t('unknownCityTitle')"></h2>
+            <p x-text="t('unknownCityBody')"></p>
+            <p class="city-list" x-show="cities.length">
+                <template x-for="(city, index) in cities" :key="city.slug">
+                    <span>
+                        <a :href="city.url" x-text="city.name"></a><span x-show="index < cities.length - 1"> · </span>
+                    </span>
+                </template>
+            </p>
+            <p class="city-add">
+                <a href="https://app.gdzienawesta.com/add-your-city.html" x-text="t('addYourCity')"></a>
+            </p>
         </div>
 
         <!-- Error State -->
@@ -34,7 +57,7 @@
         </div>
 
         <!-- Event Card -->
-        <div x-show="event && !loading && !error" class="event-card">
+        <div x-show="event && !loading && !error && !unknownCity" class="event-card">
             <div class="language-switcher language-switcher-mobile">
                 <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
                 <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
@@ -105,13 +128,32 @@
         <!-- Footer -->
         <footer class="footer">
             <p class="footer-love" x-text="t('footerLove')"></p>
-            <p class="footer-timezone" x-text="t('timezone')"></p>
-            <p class="footer-links">
-                <span x-text="t('footerCode')"></span> <a href="https://github.com/gierwialo/westnfound" target="_blank" rel="noopener">GitHub</a><br>
-                <span x-text="t('footerFeedback')"></span> <a href="https://github.com/gierwialo/westnfound/issues" target="_blank" rel="noopener" x-text="t('footerReport')"></a>
-                <br>
-                <a :href="'/' + t('calendarPath')" x-text="t('footerCalendarDirect')"></a>
+
+            <!-- Cities first: what the visitor might actually want next -->
+            <p class="footer-cities" x-show="cities.length > 1">
+                <span x-text="t('footerCities')"></span>
+                <template x-for="(city, index) in cities" :key="city.slug">
+                    <span>
+                        <a :href="city.url" :class="{ 'city-current': city.is_current }" x-text="city.name"></a><span x-show="index < cities.length - 1"> &middot; </span>
+                    </span>
+                </template>
             </p>
+
+            <p class="footer-links">
+                <a :href="'/' + t('calendarPath')" x-text="t('footerCalendarDirect')"></a> &middot;
+                <a href="https://app.gdzienawesta.com" target="_blank" rel="noopener" x-text="t('footerApp')"></a> &middot;
+                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" x-text="t('addYourCity')"></a> &middot;
+                <a href="https://app.gdzienawesta.com/thanks.html" target="_blank" rel="noopener" x-text="t('footerThanks')"></a>
+            </p>
+
+            <!-- Project plumbing: real, but not what a dancer came here for -->
+            <div class="footer-fineprint">
+                <p class="footer-links">
+                    <span x-text="t('footerCode')"></span> <a href="https://github.com/gierwialo/westnfound" target="_blank" rel="noopener">GitHub</a> &middot;
+                    <span x-text="t('footerFeedback')"></span> <a href="https://github.com/gierwialo/westnfound/issues" target="_blank" rel="noopener" x-text="t('footerReport')"></a>
+                </p>
+                <p class="footer-timezone" x-text="t('timezone')"></p>
+            </div>
         </footer>
     </div>
 

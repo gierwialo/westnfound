@@ -36,6 +36,18 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'events.middleware.CityMiddleware',
+]
+
+# Domains under which a subdomain names a city: lodz.gdzienawesta.com and,
+# for local work, lodz.lvh.me (*.lvh.me resolves to 127.0.0.1). Any other host
+# resolves to the default city, which is what the site did before cities.
+CITY_BASE_DOMAINS = [
+    d.strip().lower()
+    for d in os.environ.get(
+        'CITY_BASE_DOMAINS', 'gdzienawesta.com,lvh.me,localhost'
+    ).split(',')
+    if d.strip()
 ]
 
 ROOT_URLCONF = 'westnfound.urls'
