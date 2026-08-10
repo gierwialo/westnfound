@@ -16,7 +16,9 @@
                 <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
             </div>
             <h1 x-text="t('title')"></h1>
-            <p class="subtitle" x-text="t('subtitle')"></p>
+            <p class="subtitle">
+                <span x-text="t('subtitle')"></span><template x-if="namedCity"><span> &middot; <span class="city-current" x-text="namedCity.name"></span></span></template>
+            </p>
         </header>
 
         <!-- Loading State -->
@@ -132,6 +134,14 @@
                 <span x-text="t('footerFeedback')"></span> <a href="https://github.com/gierwialo/westnfound/issues" target="_blank" rel="noopener" x-text="t('footerReport')"></a>
                 <br>
                 <a :href="'/' + t('calendarPath')" x-text="t('footerCalendarDirect')"></a>
+            </p>
+            <p class="footer-cities" x-show="otherCities.length">
+                <span x-text="t('footerOtherCities')"></span>
+                <template x-for="(city, index) in otherCities" :key="city.slug">
+                    <span>
+                        <a :href="city.url" x-text="city.name"></a><span x-show="index < otherCities.length - 1"> &middot; </span>
+                    </span>
+                </template>
             </p>
         </footer>
     </div>

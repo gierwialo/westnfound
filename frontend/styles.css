@@ -810,3 +810,17 @@ body {
     font-size: 0.95em;
     opacity: 0.85;
 }
+
+/* Which city you are looking at, in the header and in the footer */
+.city-current {
+    font-weight: 600;
+}
+
+.footer-cities {
+    margin-top: 8px;
+}
+
+.footer-cities a {
+    color: inherit;
+    text-decoration: underline;
+}

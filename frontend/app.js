@@ -18,6 +18,20 @@ function eventApp() {
             return this.events[this.currentEventIndex] || null;
         },
 
+        get currentCity() {
+            return this.cities.find(city => city.is_current) || null;
+        },
+
+        get namedCity() {
+            // Saying "Warszawa" when Warsaw is the only city we have adds
+            // nothing; the name earns its place once there is a choice.
+            return this.cities.length > 1 ? this.currentCity : null;
+        },
+
+        get otherCities() {
+            return this.cities.filter(city => !city.is_current);
+        },
+
         init() {
             this.initLanguage();
             this.loadCities();
@@ -100,11 +114,19 @@ function eventApp() {
                 this.currentLang = lang;
                 localStorage.setItem('preferredLanguage', lang);
                 this.updateHtmlLang();
+                this.updateTitle();
             }
         },
 
         updateHtmlLang() {
             document.documentElement.lang = this.currentLang;
+        },
+
+        updateTitle() {
+            const city = this.namedCity;
+            document.title = city
+                ? `${this.t('title')} - ${city.name}`
+                : this.t('title');
         },
 
         t(key) {
@@ -116,6 +138,7 @@ function eventApp() {
                 const response = await fetch('/api/cities/');
                 const data = await response.json();
                 this.cities = data.cities || [];
+                this.updateTitle();
             } catch (err) {
                 // The footer and the unknown-city page degrade to nothing;
                 // never let this break the event card.
