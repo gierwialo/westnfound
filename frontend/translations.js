@@ -7,7 +7,7 @@ const translations = {
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
         errorTitle: "Ups! Coś poszło nie tak",
-        footerOtherCities: "Inne miasta:",
+        footerCities: "Miasta:",
         unknownCityTitle: "Nie ma jeszcze tego miasta",
         unknownCityBody: "Pod tym adresem nie prowadzimy jeszcze kalendarza. Miasta, które już są:",
         addYourCity: "Dodaj swoje miasto",
@@ -42,6 +42,8 @@ const translations = {
         footerFeedback: "Masz pomysł lub uwagę?",
         footerReport: "Zgłoś tutaj",
         footerCalendarDirect: "Bezpośredni link do kalendarza",
+        footerApp: "Aplikacja na telefon",
+        footerThanks: "Podziękowania",
         calendarPath: "kalendarz",
 
         // Language
@@ -59,7 +61,7 @@ const translations = {
         // Loading & Error states
         loading: "Loading event...",
         errorTitle: "Oops! Something went wrong",
-        footerOtherCities: "Other cities:",
+        footerCities: "Cities:",
         unknownCityTitle: "This city isn't here yet",
         unknownCityBody: "We don't keep a calendar at this address yet. Cities we do have:",
         addYourCity: "Add your city (in Polish)",
@@ -94,6 +96,8 @@ const translations = {
         footerFeedback: "Have an idea or feedback?",
         footerReport: "Report here",
         footerCalendarDirect: "Direct calendar link",
+        footerApp: "Mobile app",
+        footerThanks: "Thanks",
         calendarPath: "calendar",
 
         // Language

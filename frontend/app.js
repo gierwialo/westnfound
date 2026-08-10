@@ -28,10 +28,6 @@ function eventApp() {
             return this.cities.length > 1 ? this.currentCity : null;
         },
 
-        get otherCities() {
-            return this.cities.filter(city => !city.is_current);
-        },
-
         init() {
             this.initLanguage();
             this.loadCities();

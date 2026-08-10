@@ -824,3 +824,28 @@ body {
     color: inherit;
     text-decoration: underline;
 }
+
+/* Footer: cities lead, project plumbing recedes */
+.footer-cities {
+    margin-top: 10px;
+}
+
+.footer-cities a.city-current {
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* The quiet end of the footer. The timezone note used to sit between the
+   bold sign-off and the links, where it had nothing its own size to sit
+   next to; grouped with the project links it reads as a footnote. */
+.footer-fineprint {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 0.88em;
+    opacity: 0.75;
+}
+
+.footer-fineprint .footer-links {
+    margin-top: 0 !important;
+}
