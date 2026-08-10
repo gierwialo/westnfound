@@ -13,6 +13,16 @@ function eventApp() {
         swipeHandlersInitialized: false,
         unknownCity: false,
         cities: [],
+        refreshTimer: null,
+        inFlight: false,
+        // Reading `now` is what ties the countdown to the clock; see startCountdown()
+        now: Date.now(),
+
+        REFRESH_MS: 5 * 60 * 1000,
+        // A refresh usually fails because the network has just gone away with
+        // the phone screen. It comes back in seconds, so retry in seconds.
+        RETRY_MS: 20 * 1000,
+        FETCH_TIMEOUT_MS: 15 * 1000,
 
         get event() {
             return this.events[this.currentEventIndex] || null;
@@ -31,9 +41,26 @@ function eventApp() {
         init() {
             this.initLanguage();
             this.loadCities();
+            // Every load schedules the next one, so there is one timer, and a
+            // failed refresh can come back sooner than a successful one.
             this.loadEvent();
-            // Auto-refresh every 5 minutes
-            setInterval(() => this.loadEvent(), 5 * 60 * 1000);
+
+            // A phone whose screen was locked, or a laptop back from sleep,
+            // returns with a timer that has not run for a while and possibly a
+            // refresh that died with the old network. Catch up on the way back
+            // in instead of waiting out the rest of the interval.
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) this.loadEvent({ background: true });
+            });
+            window.addEventListener('online', () => this.loadEvent({ background: true }));
+        },
+
+        scheduleRefresh(delay) {
+            if (this.refreshTimer) clearTimeout(this.refreshTimer);
+            this.refreshTimer = setTimeout(
+                () => this.loadEvent({ background: true }),
+                delay
+            );
         },
 
         initSwipeHandlers() {
@@ -142,19 +169,49 @@ function eventApp() {
             }
         },
 
-        async loadEvent() {
-            this.loading = true;
-            this.error = false;
-            this.unknownCity = false;
-
+        async fetchJson(url) {
+            // fetch() on its own waits forever. A request that left just as the
+            // network went away never settles, and without a deadline the page
+            // sits on a spinner until the visitor gives up and reloads.
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), this.FETCH_TIMEOUT_MS);
             try {
-                const response = await fetch('/api/next-events/?limit=3');
-                const data = await response.json();
+                const response = await fetch(url, { signal: controller.signal });
+                return { response, data: await response.json() };
+            } finally {
+                clearTimeout(timer);
+            }
+        },
+
+        async loadEvent({ background = false } = {}) {
+            if (this.inFlight) return;
+            this.inFlight = true;
+
+            // A background refresh runs behind a card someone may be reading.
+            // It may replace the data; it may never take the page away. So no
+            // spinner, and a failure leaves the last good events on screen -
+            // stale by minutes beats gone. Only the first load, the retry
+            // button and a refresh over an error own the whole page.
+            const silent = background
+                && this.events.length > 0
+                && !this.error
+                && !this.unknownCity;
+
+            if (!silent) {
+                this.loading = true;
+                this.error = false;
+                this.unknownCity = false;
+            }
+
+            let succeeded = false;
+            try {
+                const { response, data } = await this.fetchJson('/api/next-events/?limit=3');
 
                 if (data.error === 'Unknown city') {
                     // The address names a city we do not serve. Not an error
                     // the visitor can retry out of, so it gets its own state.
-                    this.unknownCity = true;
+                    if (!silent) this.unknownCity = true;
+                    succeeded = true;
                     return;
                 }
 
@@ -165,16 +222,22 @@ function eventApp() {
                 this.events = data.events || [];
                 this.currentEventIndex = 0;
                 this.lastUpdate = new Date().toLocaleTimeString(this.currentLang + '-' + this.currentLang.toUpperCase());
+                this.error = false;
                 this.startCountdown();
+                succeeded = true;
 
                 // Re-initialize swipe handlers after DOM update
                 this.$nextTick(() => this.initSwipeHandlers());
             } catch (err) {
-                this.error = true;
-                this.errorMessage = err.message;
                 console.error('Error loading event:', err);
+                if (!silent) {
+                    this.error = true;
+                    this.errorMessage = err.message;
+                }
             } finally {
-                this.loading = false;
+                this.inFlight = false;
+                if (!silent) this.loading = false;
+                this.scheduleRefresh(succeeded ? this.REFRESH_MS : this.RETRY_MS);
             }
         },
 
@@ -215,7 +278,7 @@ function eventApp() {
 
         isEventOngoing() {
             if (!this.event) return false;
-            const now = new Date();
+            const now = new Date(this.now);
             const startDate = new Date(this.event.start);
             const endDate = new Date(this.event.end);
             return now >= startDate && now < endDate;
@@ -224,7 +287,7 @@ function eventApp() {
         getTimeUntil() {
             if (!this.event) return '';
 
-            const now = new Date();
+            const now = new Date(this.now);
             const startDate = new Date(this.event.start);
             const endDate = new Date(this.event.end);
 
@@ -258,10 +321,15 @@ function eventApp() {
                 clearInterval(this.countdownInterval);
             }
 
-            // Update countdown every minute
+            // Alpine re-runs an expression when a property it read changes, so
+            // moving `now` is what moves the countdown. The previous timer
+            // called $nextTick(), which returns a promise and changes no state,
+            // so the numbers only ever moved when a refresh replaced the
+            // events - and stood still whenever refreshes failed.
+            this.now = Date.now();
             this.countdownInterval = setInterval(() => {
-                this.$nextTick();
-            }, 60000);
+                this.now = Date.now();
+            }, 30000);
         },
 
         addToCalendar() {
