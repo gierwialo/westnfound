@@ -1,6 +1,6 @@
 from django.http import JsonResponse
 from django.views import View
-from .models import Calendar
+from .models import City
 from .services import GoogleCalendarService
 import logging
 
@@ -12,17 +12,18 @@ class NextEventView(View):
 
     def get(self, request):
         try:
-            # Get all active calendars
-            active_calendars = Calendar.objects.filter(is_active=True)
+            # Step 5.2 will narrow this to the city resolved from the Host
+            # header; until then every active city is merged, which is what
+            # this endpoint has always done.
+            active_cities = City.objects.filter(is_active=True)
 
-            if not active_calendars.exists():
+            if not active_cities.exists():
                 return JsonResponse({
-                    'error': 'No active calendars',
-                    'message': 'Add calendars in the admin panel'
+                    'error': 'No active cities',
+                    'message': 'Add cities in the admin panel'
                 }, status=404)
 
-            # Get calendar IDs
-            calendar_ids = [cal.calendar_id for cal in active_calendars]
+            calendar_ids = [city.calendar_id for city in active_cities]
 
             # Fetch next event
             service = GoogleCalendarService()
@@ -52,13 +53,15 @@ class NextEventsView(View):
 
     def get(self, request):
         try:
-            # Get all active calendars
-            active_calendars = Calendar.objects.filter(is_active=True)
+            # Step 5.2 will narrow this to the city resolved from the Host
+            # header; until then every active city is merged, which is what
+            # this endpoint has always done.
+            active_cities = City.objects.filter(is_active=True)
 
-            if not active_calendars.exists():
+            if not active_cities.exists():
                 return JsonResponse({
-                    'error': 'No active calendars',
-                    'message': 'Add calendars in the admin panel'
+                    'error': 'No active cities',
+                    'message': 'Add cities in the admin panel'
                 }, status=404)
 
             # Get limit parameter from query string (default: 3)
@@ -69,8 +72,7 @@ class NextEventsView(View):
             except ValueError:
                 limit = 3
 
-            # Get calendar IDs
-            calendar_ids = [cal.calendar_id for cal in active_calendars]
+            calendar_ids = [city.calendar_id for city in active_cities]
 
             # Fetch next events
             service = GoogleCalendarService()
