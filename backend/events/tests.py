@@ -218,3 +218,51 @@ class CalendarRedirectTests(TestCase):
         for path in self.PATHS:
             response = self.client.get(path, HTTP_HOST='krakow.gdzienawesta.com')
             self.assertEqual(response.status_code, 404, path)
+
+
+class CitiesEndpointTests(TestCase):
+    """Feeds the footer and the unknown-city page."""
+
+    def setUp(self):
+        self.warsaw = City.objects.create(
+            name='Warszawa', calendar_id='w@example.com', is_default=True
+        )
+        self.lodz = City.objects.create(name='Łódź', calendar_id='l@example.com')
+
+    def get(self, host='gdzienawesta.com'):
+        return self.client.get('/api/cities/', HTTP_HOST=host).json()
+
+    def test_default_city_links_to_the_apex(self):
+        by_slug = {c['slug']: c for c in self.get()['cities']}
+        self.assertEqual(by_slug['warszawa']['url'], '//gdzienawesta.com')
+        self.assertEqual(by_slug['lodz']['url'], '//lodz.gdzienawesta.com')
+
+    def test_links_stay_on_the_domain_the_visitor_is_using(self):
+        """Working on lvh.me must not produce links out to production."""
+        by_slug = {c['slug']: c for c in self.get(host='lodz.lvh.me')['cities']}
+        self.assertEqual(by_slug['lodz']['url'], '//lodz.lvh.me')
+        self.assertEqual(by_slug['warszawa']['url'], '//lvh.me')
+
+    def test_current_city_is_marked(self):
+        data = self.get(host='lodz.gdzienawesta.com')
+        self.assertEqual(data['current'], 'lodz')
+        current = [c['slug'] for c in data['cities'] if c['is_current']]
+        self.assertEqual(current, ['lodz'])
+
+    def test_unknown_city_still_gets_the_list(self):
+        """The 404 page needs the list precisely when there is no current city."""
+        data = self.get(host='krakow.gdzienawesta.com')
+        self.assertIsNone(data['current'])
+        self.assertEqual({c['slug'] for c in data['cities']}, {'warszawa', 'lodz'})
+
+    def test_inactive_cities_are_hidden(self):
+        self.lodz.is_active = False
+        self.lodz.save()
+        self.assertEqual([c['slug'] for c in self.get()['cities']], ['warszawa'])
+
+    def test_order_is_polish_alphabetical(self):
+        City.objects.create(name='Gdańsk', calendar_id='g@example.com')
+        self.assertEqual(
+            [c['name'] for c in self.get()['cities']],
+            ['Gdańsk', 'Łódź', 'Warszawa'],
+        )

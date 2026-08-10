@@ -11,6 +11,8 @@ function eventApp() {
         touchStartX: 0,
         touchEndX: 0,
         swipeHandlersInitialized: false,
+        unknownCity: false,
+        cities: [],
 
         get event() {
             return this.events[this.currentEventIndex] || null;
@@ -18,6 +20,7 @@ function eventApp() {
 
         init() {
             this.initLanguage();
+            this.loadCities();
             this.loadEvent();
             // Auto-refresh every 5 minutes
             setInterval(() => this.loadEvent(), 5 * 60 * 1000);
@@ -108,13 +111,33 @@ function eventApp() {
             return translations[this.currentLang]?.[key] || key;
         },
 
+        async loadCities() {
+            try {
+                const response = await fetch('/api/cities/');
+                const data = await response.json();
+                this.cities = data.cities || [];
+            } catch (err) {
+                // The footer and the unknown-city page degrade to nothing;
+                // never let this break the event card.
+                console.error('Error loading cities:', err);
+            }
+        },
+
         async loadEvent() {
             this.loading = true;
             this.error = false;
+            this.unknownCity = false;
 
             try {
                 const response = await fetch('/api/next-events/?limit=3');
                 const data = await response.json();
+
+                if (data.error === 'Unknown city') {
+                    // The address names a city we do not serve. Not an error
+                    // the visitor can retry out of, so it gets its own state.
+                    this.unknownCity = true;
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error(data.message || this.t('errorDefault'));

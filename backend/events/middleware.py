@@ -24,6 +24,19 @@ def _hostname(raw_host: str) -> str:
     return host.partition(':')[0]
 
 
+def base_domain_for(raw_host: str, base_domains):
+    """Which configured base domain this request arrived on, if any.
+
+    Used to build links to sibling cities that stay on the domain the visitor
+    is already using, so local work on lvh.me does not link out to production.
+    """
+    host = _hostname(raw_host)
+    for base in base_domains:
+        if host == base or host == f'www.{base}' or host.endswith(f'.{base}'):
+            return base
+    return None
+
+
 def resolve_city(raw_host: str, base_domains):
     """Return (city, is_unknown_subdomain).
 

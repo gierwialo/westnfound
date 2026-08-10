@@ -7,6 +7,9 @@ const translations = {
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
         errorTitle: "Ups! Coś poszło nie tak",
+        unknownCityTitle: "Nie ma jeszcze tego miasta",
+        unknownCityBody: "Pod tym adresem nie prowadzimy jeszcze kalendarza. Miasta, które już są:",
+        addYourCity: "Dodaj swoje miasto",
         errorDefault: "Błąd pobierania wydarzenia",
         retryButton: "Spróbuj ponownie",
 
@@ -55,6 +58,9 @@ const translations = {
         // Loading & Error states
         loading: "Loading event...",
         errorTitle: "Oops! Something went wrong",
+        unknownCityTitle: "This city isn't here yet",
+        unknownCityBody: "We don't keep a calendar at this address yet. Cities we do have:",
+        addYourCity: "Add your city (in Polish)",
         errorDefault: "Error loading event",
         retryButton: "Try again",
 

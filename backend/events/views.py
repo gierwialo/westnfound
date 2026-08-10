@@ -126,3 +126,40 @@ class CalendarRedirectView(View):
             f'?src={quote(city.calendar_id, safe="")}'
             f'&ctz={quote(self.DISPLAY_TIMEZONE, safe="")}'
         )
+
+
+class CitiesView(View):
+    """The cities we serve, for the footer and the unknown-city page."""
+
+    def get(self, request):
+        from django.conf import settings
+
+        from .middleware import base_domain_for
+        from .models import City
+
+        base = (
+            base_domain_for(request.get_host(), settings.CITY_BASE_DOMAINS)
+            or settings.CITY_BASE_DOMAINS[0]
+        )
+        current = getattr(request, 'city', None)
+
+        cities = []
+        for city in City.objects.filter(is_active=True):
+            # The default city keeps the apex as its address; the rest live on
+            # their own subdomain. Links are protocol-relative on purpose:
+            # Cloudflare terminates TLS, so the origin always sees plain http
+            # and would otherwise hand out http:// links on an https page.
+            host = base if city.is_default else f'{city.slug}.{base}'
+            cities.append({
+                'name': city.name,
+                'slug': city.slug,
+                'url': f'//{host}',
+                'is_current': current is not None and city.pk == current.pk,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'cities': cities,
+            'count': len(cities),
+            'current': current.slug if current else None,
+        })

@@ -788,3 +788,25 @@ body {
         padding: 8px;
     }
 }
+
+/* Unknown city: the list of cities we do serve, and the way in for a new one */
+.city-list {
+    margin: 16px 0 8px;
+    line-height: 1.9;
+}
+
+.city-list a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.city-list a:hover {
+    text-decoration: underline;
+}
+
+.city-add {
+    margin-top: 12px;
+    font-size: 0.95em;
+    opacity: 0.85;
+}
