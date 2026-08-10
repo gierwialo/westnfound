@@ -1,4 +1,6 @@
-from django.http import JsonResponse
+from urllib.parse import quote
+
+from django.http import HttpResponseNotFound, HttpResponseRedirect, JsonResponse
 from django.views import View
 from .services import GoogleCalendarService
 import logging
@@ -96,3 +98,31 @@ class NextEventsView(View):
                 'error': 'Server error',
                 'message': str(e)
             }, status=500)
+
+
+class CalendarRedirectView(View):
+    """Send /kalendarz and /calendar to the city's Google Calendar.
+
+    These four paths used to be `return 302` blocks in nginx.prod.conf with
+    Warsaw's calendar written into them. They live here now so that adding a
+    city in the admin panel gives it a working calendar address too, instead
+    of a page that works and a link that does not.
+    """
+
+    # Every city we serve is in Poland; kept as it was in the nginx config.
+    DISPLAY_TIMEZONE = 'Europe/Warsaw'
+
+    def get(self, request):
+        city = getattr(request, 'city', None)
+        if city is None:
+            # Step 5.4 replaces this with the page listing the cities we do
+            # serve; a bare response keeps the shape right until then.
+            return HttpResponseNotFound('No city is served at this address\n')
+
+        # safe='' matters: quote() leaves "/" alone by default, and the target
+        # nginx used carried the timezone as Europe%2FWarsaw.
+        return HttpResponseRedirect(
+            'https://calendar.google.com/calendar/embed'
+            f'?src={quote(city.calendar_id, safe="")}'
+            f'&ctz={quote(self.DISPLAY_TIMEZONE, safe="")}'
+        )

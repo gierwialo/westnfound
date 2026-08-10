@@ -177,3 +177,44 @@ class ApiScopingTests(TestCase):
         response = self.client.get('/api/next-events/', HTTP_HOST='gdzienawesta.com')
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json()['error'], 'No active cities')
+
+
+class CalendarRedirectTests(TestCase):
+    """The four paths that used to be hardcoded in nginx.prod.conf."""
+
+    PATHS = ['/kalendarz', '/kalendarz/', '/calendar', '/calendar/']
+
+    def setUp(self):
+        self.warsaw = City.objects.create(
+            name='Warszawa',
+            calendar_id='warsawwestiesdance@gmail.com',
+            is_default=True,
+        )
+        self.lodz = City.objects.create(name='Łódź', calendar_id='lodz@example.com')
+
+    def test_apex_target_is_unchanged(self):
+        """Byte for byte what nginx returned before this moved into Django."""
+        expected = (
+            'https://calendar.google.com/calendar/embed'
+            '?src=warsawwestiesdance%40gmail.com&ctz=Europe%2FWarsaw'
+        )
+        for path in self.PATHS:
+            response = self.client.get(path, HTTP_HOST='gdzienawesta.com')
+            self.assertEqual(response.status_code, 302, path)
+            self.assertEqual(response['Location'], expected, path)
+
+    def test_subdomain_points_at_its_own_calendar(self):
+        for path in self.PATHS:
+            response = self.client.get(path, HTTP_HOST='lodz.gdzienawesta.com')
+            self.assertEqual(response.status_code, 302, path)
+            self.assertIn('lodz%40example.com', response['Location'], path)
+
+    def test_no_redirect_chain_on_the_slashless_form(self):
+        """APPEND_SLASH must not bounce /kalendarz to /kalendarz/ first."""
+        response = self.client.get('/kalendarz', HTTP_HOST='gdzienawesta.com')
+        self.assertTrue(response['Location'].startswith('https://calendar.google.com'))
+
+    def test_unknown_city_gets_a_404(self):
+        for path in self.PATHS:
+            response = self.client.get(path, HTTP_HOST='krakow.gdzienawesta.com')
+            self.assertEqual(response.status_code, 404, path)
