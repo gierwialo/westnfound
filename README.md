@@ -12,8 +12,10 @@ Google Calendar. Runs at [gdzienawesta.com](https://gdzienawesta.com).
   configured city says so and lists the ones that exist.
 - **The next three events**, swipeable, with a live countdown and buttons to
   add the event to a calendar or navigate to the venue.
-- **`/kalendarz` and `/calendar`** send you to the current city's Google
-  Calendar, so you can subscribe to it in your own.
+- **`/kalendarz` and `/calendar`** show the city's whole calendar, and
+  **`/kalendarz.ics` and `/calendar.ics`** are the same calendar as a feed to
+  subscribe to. Subscribers get an address on this domain rather than a Google
+  one, so the calendar behind a city can change without anyone resubscribing.
 - **Polish and English**, detected from the browser and switchable, with a
   preference remembered between visits.
 - **Times in the visitor's own timezone**, wherever they are.
@@ -25,6 +27,11 @@ No Google API keys and no OAuth: events come from each calendar's **public
 iCal feed** (`calendar.google.com/calendar/ical/<id>/public/basic.ics`), which
 is parsed server-side with `icalendar` + `recurring_ical_events` so recurring
 events, cancellations and per-occurrence changes all land correctly.
+
+Each calendar is fetched **at most every 15 minutes** and shared by everything that
+needs it — the pages, the API and the subscription feed. All of it leaves from
+the server's one address, so the alternative was traffic to Google that grew
+with the site's own popularity.
 
 Which city a request is for is decided from the `Host` header
 (`events/middleware.py`); an unrecognised host falls back to the default city,
@@ -80,19 +87,21 @@ be exercised locally without touching `/etc/hosts` — see
 │   │   ├── models.py       # City: name, slug, calendar id, default flag
 │   │   ├── middleware.py   # Host header -> city
 │   │   ├── services.py     # iCal fetching and recurrence expansion
-│   │   ├── views.py        # API endpoints and calendar redirects
+│   │   ├── views.py        # API endpoints and the calendar feed
 │   │   ├── slugs.py        # city name -> ASCII subdomain label
 │   │   └── tests.py
 │   └── westnfound/         # Django settings and URLs
 ├── frontend/
 │   ├── index.html
+│   ├── calendar.html       # the calendar page, both spellings of the path
 │   ├── app.js              # Alpine.js logic
+│   ├── calendar.js         # Alpine.js logic for the calendar page
 │   ├── translations.js     # PL/EN strings
 │   ├── styles.css
 │   ├── nginx.dev.conf
 │   └── nginx.prod.conf
 └── scripts/
-    └── stamp-assets.py     # cache-busting version stamps for CSS and JS
+    └── stamp-assets.py     # cache-busting version stamps for every page
 ```
 
 ## Tests
