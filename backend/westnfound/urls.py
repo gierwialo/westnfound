@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.urls import path, include
 import os
 
-from events.views import CalendarRedirectView
+from events.views import CalendarFeedView
 
 # Get admin URL from environment variable (default: 'admin')
 ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin').strip('/')
@@ -13,10 +13,9 @@ ADMIN_URL = os.environ.get('DJANGO_ADMIN_URL', 'admin').strip('/')
 urlpatterns = [
     path(f'{ADMIN_URL}/', admin.site.urls),
     path('api/', include('events.urls')),
-    # Both spellings, with and without the trailing slash, so no visitor gets
-    # bounced through a redirect on the way to a redirect.
-    path('kalendarz', CalendarRedirectView.as_view(), name='calendar-redirect-pl'),
-    path('kalendarz/', CalendarRedirectView.as_view()),
-    path('calendar', CalendarRedirectView.as_view(), name='calendar-redirect-en'),
-    path('calendar/', CalendarRedirectView.as_view()),
+    # The subscribable feed, in both spellings. /kalendarz and /calendar
+    # without the extension are the human page, served by nginx from the
+    # frontend - they never reach Django.
+    path('kalendarz.ics', CalendarFeedView.as_view(), name='calendar-feed-pl'),
+    path('calendar.ics', CalendarFeedView.as_view(), name='calendar-feed-en'),
 ]

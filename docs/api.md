@@ -7,6 +7,13 @@ on the subdomain it was asked on.
 Times are ISO 8601 with a UTC offset; the frontend renders them in the
 visitor's own timezone.
 
+Every endpoint that needs a calendar reads the same cached copy of it,
+the one the subscription feed hands out. Requests to Google all leave from the
+server's single address, so without that the site's traffic to Google grew
+with its own popularity: one fetch per visit, plus one per open tab every five
+minutes. Now it is one fetch per calendar every 15 minutes no matter how busy
+the site is - at the price of a calendar edit taking that long to show up.
+
 ## GET /api/next-events/
 
 The next few events for this city.
@@ -65,11 +72,30 @@ Every active city, for the footer and the unknown-city page.
   on an `https://` page.
 - `current` is `null` when the host names no city we serve.
 
-## GET /kalendarz, /calendar
+## GET /api/calendar/
 
-Redirect (302) to this city's Google Calendar embed. Both spellings work, with
-and without a trailing slash, and none of the four bounces through an
-intermediate redirect.
+What the calendar page needs about the city it is showing: `city`
+(`name`, `slug`), `calendar_id`, `timezone` and `google_url` — the address of
+this calendar on Google, still worth offering as a link.
+
+## GET /kalendarz.ics, /calendar.ics
+
+This city's calendar as an iCal feed, `text/calendar`, for anyone subscribing
+in their own calendar app. Both spellings serve the same thing.
+
+The body is Google's own feed passed through, cached for 15 minutes: every
+subscribed calendar app polls on its own schedule, and without the cache each
+poll would become a request to Google. The last good copy is kept for a week
+and answered with when Google is unreachable — a feed that is stale by minutes
+goes unnoticed, while a feed that is briefly missing empties someone's
+calendar. A stale answer carries `X-Feed-Stale: 1`.
+
+`502` means we have no copy at all, fresh or stale. It is deliberately not an
+empty calendar, which a subscriber's app would read as every event having been
+cancelled.
+
+`/kalendarz` and `/calendar` (without the extension) are the human page and
+never reach Django — nginx serves them from the frontend.
 
 ## Errors
 

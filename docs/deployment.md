@@ -78,8 +78,8 @@ docker compose --profile prod up -d --build
 python3 scripts/stamp-assets.py
 ```
 
-`stamp-assets.py` rewrites the asset links in `index.html` with a hash of each
-file's contents. **It is not optional.** nginx serves CSS and JS with
+`stamp-assets.py` rewrites the asset links in every page under `frontend/`
+with a hash of each file's contents. **It is not optional.** nginx serves CSS and JS with
 `expires 1y` and `Cache-Control: immutable`, while the HTML document is not
 cached — so without it a returning visitor gets new markup with last year's
 JavaScript. Because the version is a content hash, files you did not touch
@@ -87,9 +87,11 @@ keep their URLs and stay cached.
 
 Re-running the script is safe; an existing `?v=` is replaced, not appended to.
 
-If your deployment injects anything into `index.html` after checkout —
+If your deployment injects anything into the pages after checkout —
 analytics, for instance, from a script kept out of the repository — run it in
-the same step. Order does not matter.
+the same step. Order does not matter. Such a script wants checking whenever a
+page is added: one written when `index.html` was the only page will silently
+skip the new one.
 
 ## Management
 
