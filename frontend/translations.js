@@ -41,10 +41,21 @@ const translations = {
         footerCode: "Kod dostępny na",
         footerFeedback: "Masz pomysł lub uwagę?",
         footerReport: "Zgłoś tutaj",
-        footerCalendarDirect: "Bezpośredni link do kalendarza",
+        footerCalendarDirect: "Kalendarz",
         footerApp: "Aplikacja na telefon",
         footerThanks: "Podziękowania",
         calendarPath: "kalendarz",
+
+        // Calendar page
+        calendarTitle: "Kalendarz",
+        calendarSubtitle: "Wszystkie wydarzenia w jednym miejscu",
+        calendarLoading: "Ładowanie kalendarza...",
+        calendarSubscribe: "📅 Subskrybuj kalendarz",
+        calendarCopy: "🔗 Skopiuj adres",
+        calendarCopied: "✓ Skopiowano",
+        calendarOpenGoogle: "Otwórz w Google Calendar",
+        calendarSubscribeHint: "Dodaj ten kalendarz do telefonu albo komputera — nowe wydarzenia będą się w nim pojawiać same.",
+        calendarBackToEvents: "← Najbliższe wydarzenia",
 
         // Language
         language: "Język",
@@ -95,10 +106,21 @@ const translations = {
         footerCode: "Code available on",
         footerFeedback: "Have an idea or feedback?",
         footerReport: "Report here",
-        footerCalendarDirect: "Direct calendar link",
+        footerCalendarDirect: "Calendar",
         footerApp: "Mobile app",
         footerThanks: "Thanks",
         calendarPath: "calendar",
+
+        // Calendar page
+        calendarTitle: "Calendar",
+        calendarSubtitle: "Every event in one place",
+        calendarLoading: "Loading calendar...",
+        calendarSubscribe: "📅 Subscribe to calendar",
+        calendarCopy: "🔗 Copy address",
+        calendarCopied: "✓ Copied",
+        calendarOpenGoogle: "Open in Google Calendar",
+        calendarSubscribeHint: "Add this calendar to your phone or computer — new events will keep showing up on their own.",
+        calendarBackToEvents: "← Upcoming events",
 
         // Language
         language: "Language",

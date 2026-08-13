@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gdzie na Westa? - Kalendarz</title>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="styles.css?v=9db47249">
+</head>
+<body>
+    <div class="container container-wide" x-data="calendarPage()" x-init="init()">
+        <!-- Header -->
+        <header class="header">
+            <div class="language-switcher language-switcher-desktop">
+                <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
+                <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
+            </div>
+            <h1 x-text="t('calendarTitle')"></h1>
+            <p class="subtitle">
+                <span x-text="t('calendarSubtitle')"></span><template x-if="city"><span> &middot; <span class="city-current" x-text="city.name"></span></span></template>
+            </p>
+        </header>
+
+        <!-- Loading State -->
+        <div x-show="loading" class="loading">
+            <div class="spinner"></div>
+            <p x-text="t('calendarLoading')"></p>
+        </div>
+
+        <!-- Unknown City State -->
+        <div x-show="unknownCity && !loading" class="error-card">
+            <div class="language-switcher language-switcher-mobile">
+                <button @click="setLanguage('pl')" :class="{ active: currentLang === 'pl' }" class="lang-btn">PL</button>
+                <button @click="setLanguage('en')" :class="{ active: currentLang === 'en' }" class="lang-btn">EN</button>
+            </div>
+            <div class="error-icon">🗺️</div>
+            <h2 x-text="t('unknownCityTitle')"></h2>
+            <p x-text="t('unknownCityBody')"></p>
+            <p class="city-list" x-show="cities.length">
+                <template x-for="(otherCity, index) in cities" :key="otherCity.slug">
+                    <span>
+                        <a :href="otherCity.url + '/' + t('calendarPath')" x-text="otherCity.name"></a><span x-show="index < cities.length - 1"> · </span>
+                    </span>
+                </template>
+            </p>
+            <p class="city-add">
+                <a href="https://app.gdzienawesta.com/add-your-city.html" x-text="t('addYourCity')"></a>
+            </p>
+        </div>
+
+        <!-- Error State -->
+        <div x-show="error && !loading" class="error-card">
+            <div class="error-icon">⚠️</div>
+            <h2 x-text="t('errorTitle')"></h2>
+            <p x-text="t('errorDefault')"></p>
+            <button @click="load()" class="retry-btn" x-text="t('retryButton')"></button>
+        </div>
+
+        <!-- Calendar -->
+        <div x-show="city && !loading && !error && !unknownCity" class="calendar-card">
+            <!-- Subscribing is the point of this page; the preview only proves
+                 there is something worth subscribing to. -->
+            <div class="subscribe-row">
+                <a :href="webcalUrl" class="retry-btn subscribe-btn" x-text="t('calendarSubscribe')"></a>
+                <button @click="copyFeedUrl()" class="action-btn" x-text="copied ? t('calendarCopied') : t('calendarCopy')"></button>
+                <a :href="googleUrl" target="_blank" rel="noopener" class="action-btn" x-text="t('calendarOpenGoogle')"></a>
+            </div>
+            <p class="subscribe-hint" x-text="t('calendarSubscribeHint')"></p>
+            <p class="subscribe-address" x-text="feedUrl"></p>
+
+            <div class="calendar-frame">
+                <iframe
+                    :src="embedSrc"
+                    :title="t('calendarTitle')"
+                    frameborder="0"
+                    scrolling="no"
+                    loading="lazy"></iframe>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p class="footer-links">
+                <a href="/" x-text="t('calendarBackToEvents')"></a> &middot;
+                <a href="https://app.gdzienawesta.com" target="_blank" rel="noopener" x-text="t('footerApp')"></a> &middot;
+                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" x-text="t('addYourCity')"></a>
+            </p>
+            <p class="footer-timezone" x-text="t('timezone')"></p>
+        </footer>
+    </div>
+
+    <script src="translations.js?v=63498f5e"></script>
+    <script src="calendar.js?v=6b301b5f"></script>
+</body>
+</html>

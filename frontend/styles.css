@@ -849,3 +849,91 @@ body {
 .footer-fineprint .footer-links {
     margin-top: 0 !important;
 }
+
+/* Calendar page: the feed to subscribe to, with the calendar itself as proof
+   there is something behind it. A month grid needs more width than a single
+   event card, so the container is wider here than on the event page. */
+.container-wide {
+    max-width: 1100px;
+}
+
+.calendar-card {
+    background: var(--bg-white);
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: var(--shadow-lg);
+    animation: fadeIn 0.6s ease-out;
+}
+
+.subscribe-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* The subscribe button is an anchor, not a button: webcal:// has to be a
+   link for the calendar app to be offered it. */
+.subscribe-btn {
+    display: inline-block;
+    text-decoration: none;
+}
+
+.subscribe-row .action-btn {
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+}
+
+.subscribe-hint {
+    text-align: center;
+    color: var(--text-secondary);
+    margin-top: 16px;
+}
+
+/* The address in plain sight, so copying it never depends on the clipboard
+   button working - it can be refused by the browser outright. */
+.subscribe-address {
+    text-align: center;
+    margin-top: 8px;
+    margin-bottom: 24px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    word-break: break-all;
+    user-select: all;
+}
+
+.calendar-frame {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    height: 70vh;
+    min-height: 420px;
+}
+
+.calendar-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+@media (max-width: 768px) {
+    .calendar-card {
+        padding: 20px;
+    }
+
+    /* The agenda view is a list; it needs length rather than a viewport
+       share, and a phone's viewport share is not much. */
+    .calendar-frame {
+        height: auto;
+        min-height: 0;
+    }
+
+    .calendar-frame iframe {
+        height: 65vh;
+        min-height: 380px;
+    }
+}

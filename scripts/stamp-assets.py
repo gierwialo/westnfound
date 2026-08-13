@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stamp the frontend asset links in index.html with a content hash.
+"""Stamp the frontend asset links in every page with a content hash.
 
 nginx serves CSS and JS with `expires 1y` and `Cache-Control: immutable`,
 while the HTML document is not cached at all. Without a version in the asset
@@ -11,7 +11,11 @@ The version is a hash of the file's contents, not a timestamp, so a deploy
 that does not touch app.js leaves its URL alone and visitors keep their
 cached copy.
 
-Run from the repository root, after any step that edits index.html:
+Every .html file in frontend/ is stamped, not just index.html: the calendar
+page shares styles.css and translations.js with it, so leaving it out would
+give it exactly the mismatch this script exists to prevent.
+
+Run from the repository root, after any step that edits a page:
 
     python3 scripts/stamp-assets.py
 
@@ -23,37 +27,48 @@ import re
 import sys
 from pathlib import Path
 
-ASSETS = ('styles.css', 'app.js', 'translations.js')
+ASSETS = ('styles.css', 'app.js', 'translations.js', 'calendar.js')
 
 
 def content_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()[:8]
 
 
-def stamp(frontend: Path) -> list[str]:
-    index = frontend / 'index.html'
-    html = index.read_text(encoding='utf-8')
+def stamp_page(page: Path, versions: dict[str, str]) -> list[str]:
+    html = page.read_text(encoding='utf-8')
     stamped = []
 
-    for asset in ASSETS:
-        asset_path = frontend / asset
-        if not asset_path.exists():
-            print(f'skipping {asset}: not found', file=sys.stderr)
-            continue
-
-        version = content_hash(asset_path)
+    for asset, version in versions.items():
         # Matches href="styles.css" and href="styles.css?v=old" alike, in
         # either quote style, and leaves any other attribute untouched.
         pattern = re.compile(
             r'(["\'])' + re.escape(asset) + r'(?:\?v=[^"\']*)?\1'
         )
         html, count = pattern.subn(rf'\g<1>{asset}?v={version}\g<1>', html)
+        # A page not using an asset is normal now that there is more than one
+        # page; only a page using none of them is worth a word.
         if count:
-            stamped.append(f'{asset} -> {version} ({count}x)')
-        else:
-            print(f'warning: no reference to {asset} in index.html', file=sys.stderr)
+            stamped.append(f'{page.name}: {asset} -> {version} ({count}x)')
 
-    index.write_text(html, encoding='utf-8')
+    page.write_text(html, encoding='utf-8')
+    return stamped
+
+
+def stamp(frontend: Path) -> list[str]:
+    versions = {}
+    for asset in ASSETS:
+        asset_path = frontend / asset
+        if not asset_path.exists():
+            print(f'skipping {asset}: not found', file=sys.stderr)
+            continue
+        versions[asset] = content_hash(asset_path)
+
+    stamped = []
+    for page in sorted(frontend.glob('*.html')):
+        lines = stamp_page(page, versions)
+        if not lines:
+            print(f'warning: {page.name} references no known asset', file=sys.stderr)
+        stamped.extend(lines)
     return stamped
 
 
