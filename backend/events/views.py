@@ -1,8 +1,8 @@
 from urllib.parse import quote
 
-from django.http import HttpResponseNotFound, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.views import View
-from .services import GoogleCalendarService
+from .services import CalendarFeedService, GoogleCalendarService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -100,32 +100,79 @@ class NextEventsView(View):
             }, status=500)
 
 
-class CalendarRedirectView(View):
-    """Send /kalendarz and /calendar to the city's Google Calendar.
+# Every city we serve is in Poland; kept as it was in the nginx config that
+# first hardcoded Warsaw's calendar into a redirect.
+DISPLAY_TIMEZONE = 'Europe/Warsaw'
 
-    These four paths used to be `return 302` blocks in nginx.prod.conf with
-    Warsaw's calendar written into them. They live here now so that adding a
-    city in the admin panel gives it a working calendar address too, instead
-    of a page that works and a link that does not.
+
+def _google_embed_url(city):
+    """Google's own page for this calendar, still worth linking to.
+
+    safe='' matters: quote() leaves "/" alone by default, and this address has
+    carried the timezone as Europe%2FWarsaw since it lived in nginx.
     """
+    return (
+        'https://calendar.google.com/calendar/embed'
+        f'?src={quote(city.calendar_id, safe="")}'
+        f'&ctz={quote(DISPLAY_TIMEZONE, safe="")}'
+    )
 
-    # Every city we serve is in Poland; kept as it was in the nginx config.
-    DISPLAY_TIMEZONE = 'Europe/Warsaw'
+
+class CalendarFeedView(View):
+    """The city's calendar as an iCal feed: /kalendarz.ics and /calendar.ics.
+
+    These paths used to redirect a visitor to Google. Serving the calendar
+    ourselves makes the address people subscribe to ours, which is what lets
+    the calendar behind a city change without every subscriber having to
+    resubscribe - and lets bootstrap.json name gdzienawesta.com rather than a
+    Google calendar id.
+
+    The caching, and the promise it keeps, live in CalendarFeedService.
+    """
 
     def get(self, request):
         city = getattr(request, 'city', None)
         if city is None:
-            # Step 5.4 replaces this with the page listing the cities we do
-            # serve; a bare response keeps the shape right until then.
             return HttpResponseNotFound('No city is served at this address\n')
 
-        # safe='' matters: quote() leaves "/" alone by default, and the target
-        # nginx used carried the timezone as Europe%2FWarsaw.
-        return HttpResponseRedirect(
-            'https://calendar.google.com/calendar/embed'
-            f'?src={quote(city.calendar_id, safe="")}'
-            f'&ctz={quote(self.DISPLAY_TIMEZONE, safe="")}'
-        )
+        feed, is_stale = CalendarFeedService().get(city.calendar_id)
+        if feed is None:
+            # No copy at all, fresh or stale. Saying so beats answering with
+            # an empty calendar, which a subscriber's app would take as "every
+            # event was cancelled" and act on.
+            return HttpResponse(
+                'Calendar temporarily unavailable\n',
+                status=502,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        response = HttpResponse(feed, content_type='text/calendar; charset=utf-8')
+        # inline, not attachment: a browser that follows this link should be
+        # able to hand it straight to the calendar app.
+        response['Content-Disposition'] = f'inline; filename="{city.slug}.ics"'
+        response['Cache-Control'] = f'public, max-age={CalendarFeedService.FRESH_SECONDS}'
+        if is_stale:
+            # Invisible to subscribers, but it turns "did the feed update?"
+            # into something a single curl can answer.
+            response['X-Feed-Stale'] = '1'
+        return response
+
+
+class CalendarInfoView(View):
+    """What the calendar page needs to know about the city it is showing."""
+
+    def get(self, request):
+        city = getattr(request, 'city', None)
+        if city is None:
+            return _no_city_response(request)
+
+        return JsonResponse({
+            'success': True,
+            'city': {'name': city.name, 'slug': city.slug},
+            'calendar_id': city.calendar_id,
+            'timezone': DISPLAY_TIMEZONE,
+            'google_url': _google_embed_url(city),
+        })
 
 
 class CitiesView(View):

@@ -105,6 +105,16 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Where the cached calendar feed lives. File based rather than in memory
+# because gunicorn runs four workers: a per-process cache would mean four
+# copies of every calendar and four times the polling of Google.
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.environ.get('CACHE_DIR', '/tmp/westnfound-cache'),
+    }
+}
+
 # CORS settings
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True

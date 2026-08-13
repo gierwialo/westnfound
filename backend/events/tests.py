@@ -1,7 +1,12 @@
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from datetime import timedelta
+
+import requests
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from .middleware import resolve_city
 from .models import City
@@ -179,10 +184,119 @@ class ApiScopingTests(TestCase):
         self.assertEqual(response.json()['error'], 'No active cities')
 
 
-class CalendarRedirectTests(TestCase):
-    """The four paths that used to be hardcoded in nginx.prod.conf."""
+# A real enough calendar: the event endpoints parse this too, so it needs a
+# date, and one inside the year ahead that those endpoints look at.
+_START = timezone.now() + timedelta(days=30)
+ICS = (
+    'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\n'
+    'BEGIN:VEVENT\r\nUID:praktis-1\r\nDTSTAMP:20260101T000000Z\r\n'
+    f'DTSTART:{_START.strftime("%Y%m%dT%H%M%SZ")}\r\n'
+    f'DTEND:{(_START + timedelta(hours=3)).strftime("%Y%m%dT%H%M%SZ")}\r\n'
+    'SUMMARY:Praktis\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n'
+).encode()
 
-    PATHS = ['/kalendarz', '/kalendarz/', '/calendar', '/calendar/']
+
+def _google_says(body=ICS, status=200):
+    response = Mock()
+    response.status_code = status
+    response.content = body
+    return response
+
+
+@override_settings(CACHES={'default': {'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'}})
+class CalendarFeedTests(TestCase):
+    """The feed people subscribe to. These paths used to redirect to Google."""
+
+    PATHS = ['/kalendarz.ics', '/calendar.ics']
+
+    def setUp(self):
+        cache.clear()
+        self.warsaw = City.objects.create(
+            name='Warszawa',
+            calendar_id='warsawwestiesdance@gmail.com',
+            is_default=True,
+        )
+        self.lodz = City.objects.create(name='Łódź', calendar_id='lodz@example.com')
+
+    def test_apex_serves_the_default_city_calendar(self):
+        for path in self.PATHS:
+            cache.clear()
+            with patch('events.services.requests.get', return_value=_google_says()) as get:
+                response = self.client.get(path, HTTP_HOST='gdzienawesta.com')
+            self.assertEqual(response.status_code, 200, path)
+            self.assertEqual(response.content, ICS, path)
+            self.assertEqual(
+                response['Content-Type'], 'text/calendar; charset=utf-8', path
+            )
+            self.assertIn('warsawwestiesdance%40gmail.com', get.call_args[0][0], path)
+
+    def test_subdomain_serves_its_own_calendar(self):
+        with patch('events.services.requests.get', return_value=_google_says()) as get:
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='lodz.gdzienawesta.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('lodz%40example.com', get.call_args[0][0])
+        self.assertIn('lodz.ics', response['Content-Disposition'])
+
+    def test_unknown_city_gets_a_404(self):
+        for path in self.PATHS:
+            response = self.client.get(path, HTTP_HOST='krakow.gdzienawesta.com')
+            self.assertEqual(response.status_code, 404, path)
+
+    def test_subscribers_share_one_fetch(self):
+        """Every subscribed calendar app polls on its own; Google sees one."""
+        with patch('events.services.requests.get', return_value=_google_says()) as get:
+            for _ in range(5):
+                self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(get.call_count, 1)
+
+    def test_the_site_and_the_feed_share_one_fetch(self):
+        """The page used to go to Google on every single visit."""
+        with patch('events.services.requests.get', return_value=_google_says()) as get:
+            events = self.client.get('/api/next-events/', HTTP_HOST='gdzienawesta.com')
+            feed = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        self.assertEqual(get.call_count, 1)
+        self.assertEqual(events.status_code, 200)
+        self.assertEqual(events.json()['events'][0]['title'], 'Praktis')
+        self.assertEqual(feed.content, ICS)
+
+    def test_each_city_is_cached_separately(self):
+        with patch('events.services.requests.get', return_value=_google_says()) as get:
+            self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+            self.client.get('/kalendarz.ics', HTTP_HOST='lodz.gdzienawesta.com')
+        self.assertEqual(get.call_count, 2)
+
+    def test_last_good_copy_answers_when_google_is_down(self):
+        with patch('events.services.requests.get', return_value=_google_says()):
+            self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        cache.delete('ics:fresh:warsawwestiesdance@gmail.com')
+        with patch('events.services.requests.get', side_effect=requests.Timeout()):
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, ICS)
+        self.assertEqual(response['X-Feed-Stale'], '1')
+
+    def test_no_copy_at_all_is_an_error_not_an_empty_calendar(self):
+        """An empty calendar reads as "everything was cancelled" to a subscriber."""
+        with patch('events.services.requests.get', side_effect=requests.Timeout()):
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(response.status_code, 502)
+
+    def test_a_login_page_is_neither_served_nor_cached(self):
+        """A calendar Google stopped publishing answers 200 with HTML."""
+        with patch('events.services.requests.get', return_value=_google_says(b'<html>Sign in')):
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(response.status_code, 502)
+
+        with patch('events.services.requests.get', return_value=_google_says()):
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(response.content, ICS)
+
+
+class CalendarInfoTests(TestCase):
+    """Feeds the calendar page: which city, which calendar, where Google is."""
 
     def setUp(self):
         self.warsaw = City.objects.create(
@@ -192,32 +306,25 @@ class CalendarRedirectTests(TestCase):
         )
         self.lodz = City.objects.create(name='Łódź', calendar_id='lodz@example.com')
 
-    def test_apex_target_is_unchanged(self):
-        """Byte for byte what nginx returned before this moved into Django."""
-        expected = (
+    def test_google_link_is_what_the_redirect_used_to_point_at(self):
+        """Byte for byte the address nginx, and then Django, redirected to."""
+        data = self.client.get('/api/calendar/', HTTP_HOST='gdzienawesta.com').json()
+        self.assertEqual(
+            data['google_url'],
             'https://calendar.google.com/calendar/embed'
-            '?src=warsawwestiesdance%40gmail.com&ctz=Europe%2FWarsaw'
+            '?src=warsawwestiesdance%40gmail.com&ctz=Europe%2FWarsaw',
         )
-        for path in self.PATHS:
-            response = self.client.get(path, HTTP_HOST='gdzienawesta.com')
-            self.assertEqual(response.status_code, 302, path)
-            self.assertEqual(response['Location'], expected, path)
+        self.assertEqual(data['city']['name'], 'Warszawa')
 
-    def test_subdomain_points_at_its_own_calendar(self):
-        for path in self.PATHS:
-            response = self.client.get(path, HTTP_HOST='lodz.gdzienawesta.com')
-            self.assertEqual(response.status_code, 302, path)
-            self.assertIn('lodz%40example.com', response['Location'], path)
+    def test_subdomain_describes_its_own_city(self):
+        data = self.client.get('/api/calendar/', HTTP_HOST='lodz.gdzienawesta.com').json()
+        self.assertEqual(data['city']['slug'], 'lodz')
+        self.assertEqual(data['calendar_id'], 'lodz@example.com')
 
-    def test_no_redirect_chain_on_the_slashless_form(self):
-        """APPEND_SLASH must not bounce /kalendarz to /kalendarz/ first."""
-        response = self.client.get('/kalendarz', HTTP_HOST='gdzienawesta.com')
-        self.assertTrue(response['Location'].startswith('https://calendar.google.com'))
-
-    def test_unknown_city_gets_a_404(self):
-        for path in self.PATHS:
-            response = self.client.get(path, HTTP_HOST='krakow.gdzienawesta.com')
-            self.assertEqual(response.status_code, 404, path)
+    def test_unknown_city_gets_the_shared_404(self):
+        response = self.client.get('/api/calendar/', HTTP_HOST='krakow.gdzienawesta.com')
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()['error'], 'Unknown city')
 
 
 class CitiesEndpointTests(TestCase):
