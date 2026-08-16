@@ -398,9 +398,11 @@ class RobotsTests(TestCase):
         body = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com').content
         self.assertNotIn(b'<html', body)
 
-    def test_it_is_not_left_to_cloudflares_four_hour_default(self):
+    def test_it_names_its_own_lifetime_rather_than_leaving_it_to_cloudflare(self):
+        # An explicit max-age is respected; no-cache is not, and the four-hour
+        # default takes its place.
         response = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com')
-        self.assertEqual(response['Cache-Control'], 'no-cache')
+        self.assertEqual(response['Cache-Control'], 'public, max-age=300')
 
     def test_local_development_is_not_told_to_use_https(self):
         response = self.client.get('/robots.txt', HTTP_HOST='localhost:8000')

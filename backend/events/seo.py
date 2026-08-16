@@ -62,12 +62,15 @@ class RobotsView(View):
             '',
         ]
         response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
-        # Cloudflare caches .txt by default for four hours, which is how the
-        # old fall-through answer outlived its own fix. The same guard the
-        # edge already puts on bootstrap.json, for the same reason: a file
-        # that is read rarely and changed rarely is exactly the one nobody
-        # thinks to purge.
-        response['Cache-Control'] = 'no-cache'
+        # A short, explicit lifetime rather than no-cache. Cloudflare caches
+        # .txt on its own and, where the origin gives it nothing definite to
+        # respect, stamps its own four-hour default on the way out - which is
+        # how the old fall-through answer outlived the fix for it by an
+        # afternoon. `no-cache` counts as nothing definite; a number does not,
+        # which is why styles.css keeps the year it asks for. Five minutes
+        # spares the origin nothing worth measuring and makes the next change
+        # visible while someone is still watching for it.
+        response['Cache-Control'] = 'public, max-age=300'
         return response
 
 
