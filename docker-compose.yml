@@ -7,6 +7,9 @@ services:
     command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     volumes:
       - ./backend:/app
+      # The pages Django now serves with a per-city title. Read-only: it
+      # rewrites two tags on the way out and never touches the file.
+      - ./frontend:/frontend:ro
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     environment:
@@ -25,6 +28,9 @@ services:
     command: sh -c "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn westnfound.wsgi:application --bind 0.0.0.0:8000 --workers 4"
     volumes:
       - ./backend:/app
+      # The pages Django now serves with a per-city title. Read-only: it
+      # rewrites two tags on the way out and never touches the file.
+      - ./frontend:/frontend:ro
       - static_volume:/app/staticfiles
     expose:
       - "8000"
