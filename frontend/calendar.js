@@ -48,6 +48,10 @@ function calendarPage() {
 
         init() {
             this.initLanguage();
+            // The Polish spelling is the one address this page keeps, whichever
+            // of the four the visitor arrived through.
+            this.setCanonical('/kalendarz');
+            this.updateDescription();
             this.isNarrow = window.innerWidth < this.NARROW_PX;
             this.load();
             this.loadCities();
@@ -86,6 +90,41 @@ function calendarPage() {
             document.title = this.city
                 ? `${this.t('title')} - ${this.t('calendarTitle')} - ${this.city.name}`
                 : `${this.t('title')} - ${this.t('calendarTitle')}`;
+            this.updateDescription();
+        },
+
+        updateDescription() {
+            this.setMeta('description', this.city
+                ? this.t('metaDescriptionCalendarCity').replace('{city}', this.city.name)
+                : this.t('metaDescriptionCalendar'));
+        },
+
+        // Description and canonical address are for crawlers, not for the
+        // page. Both have to be set here rather than in the HTML: the file is
+        // one static document served for every city, so a fixed canonical
+        // would point Łódź and Kraków at the apex and ask Google to drop them.
+        setMeta(name, content) {
+            let tag = document.head.querySelector(`meta[name="${name}"]`);
+            if (!tag) {
+                tag = document.createElement('meta');
+                tag.setAttribute('name', name);
+                document.head.appendChild(tag);
+            }
+            tag.setAttribute('content', content);
+        },
+
+        // The page answers to /kalendarz and /calendar alike, and www is the
+        // same site as the apex. One canonical address for all four, so a
+        // crawler is not left picking a winner among duplicates.
+        setCanonical(path) {
+            let tag = document.head.querySelector('link[rel="canonical"]');
+            if (!tag) {
+                tag = document.createElement('link');
+                tag.setAttribute('rel', 'canonical');
+                document.head.appendChild(tag);
+            }
+            const host = location.host.replace(/^www\./, '');
+            tag.setAttribute('href', `${location.protocol}//${host}${path}`);
         },
 
         t(key) {

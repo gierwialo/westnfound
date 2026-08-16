@@ -373,3 +373,75 @@ class CitiesEndpointTests(TestCase):
             [c['name'] for c in self.get()['cities']],
             ['Gdańsk', 'Łódź', 'Warszawa'],
         )
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class RobotsTests(TestCase):
+    def setUp(self):
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+
+    def test_apex_names_its_own_sitemap(self):
+        response = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('text/plain'))
+        self.assertIn('Sitemap: https://gdzienawesta.com/sitemap.xml',
+                      response.content.decode())
+
+    def test_each_city_names_the_sitemap_of_its_own_host(self):
+        response = self.client.get('/robots.txt', HTTP_HOST='lodz.gdzienawesta.com')
+        self.assertIn('Sitemap: https://lodz.gdzienawesta.com/sitemap.xml',
+                      response.content.decode())
+
+    def test_it_is_not_a_web_page(self):
+        # The whole point: this path used to fall through to index.html.
+        body = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com').content
+        self.assertNotIn(b'<html', body)
+
+    def test_local_development_is_not_told_to_use_https(self):
+        response = self.client.get('/robots.txt', HTTP_HOST='localhost:8000')
+        self.assertIn('Sitemap: http://localhost:8000/sitemap.xml',
+                      response.content.decode())
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class SitemapTests(TestCase):
+    def setUp(self):
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+        City.objects.create(name='Kraków', slug='krakow', calendar_id='k@example.com')
+
+    def _urls(self, host):
+        response = self.client.get('/sitemap.xml', HTTP_HOST=host)
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response['Content-Type'].startswith('application/xml'))
+        import re
+        return re.findall(r'<loc>([^<]+)</loc>', response.content.decode())
+
+    def test_apex_lists_every_city_because_nothing_else_links_them(self):
+        urls = self._urls('gdzienawesta.com')
+        self.assertIn('https://gdzienawesta.com/', urls)
+        self.assertIn('https://gdzienawesta.com/kalendarz', urls)
+        self.assertIn('https://lodz.gdzienawesta.com/', urls)
+        self.assertIn('https://krakow.gdzienawesta.com/', urls)
+
+    def test_a_city_lists_only_its_own_addresses(self):
+        urls = self._urls('lodz.gdzienawesta.com')
+        self.assertEqual(urls, ['https://lodz.gdzienawesta.com/',
+                                'https://lodz.gdzienawesta.com/kalendarz'])
+
+    def test_the_english_spelling_is_left_out_as_a_duplicate(self):
+        self.assertNotIn('https://gdzienawesta.com/calendar',
+                         self._urls('gdzienawesta.com'))
+
+    def test_inactive_cities_are_not_offered_to_crawlers(self):
+        City.objects.filter(slug='krakow').update(is_active=False)
+        self.assertNotIn('https://krakow.gdzienawesta.com/',
+                         self._urls('gdzienawesta.com'))
+
+    def test_unknown_subdomain_has_no_sitemap(self):
+        # That host shows an apology, not a page worth indexing.
+        response = self.client.get('/sitemap.xml', HTTP_HOST='gdansk.gdzienawesta.com')
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn(b'<loc>', response.content)

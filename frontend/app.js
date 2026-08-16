@@ -40,6 +40,8 @@ function eventApp() {
 
         init() {
             this.initLanguage();
+            this.setCanonical('/');
+            this.updateDescription();
             this.loadCities();
             // Every load schedules the next one, so there is one timer, and a
             // failed refresh can come back sooner than a successful one.
@@ -150,6 +152,42 @@ function eventApp() {
             document.title = city
                 ? `${this.t('title')} - ${city.name}`
                 : this.t('title');
+            this.updateDescription();
+        },
+
+        updateDescription() {
+            const city = this.namedCity;
+            this.setMeta('description', city
+                ? this.t('metaDescriptionCity').replace('{city}', city.name)
+                : this.t('metaDescription'));
+        },
+
+        // Description and canonical address are for crawlers, not for the
+        // page. Both have to be set here rather than in the HTML: the file is
+        // one static document served for every city, so a fixed canonical
+        // would point Łódź and Kraków at the apex and ask Google to drop them.
+        setMeta(name, content) {
+            let tag = document.head.querySelector(`meta[name="${name}"]`);
+            if (!tag) {
+                tag = document.createElement('meta');
+                tag.setAttribute('name', name);
+                document.head.appendChild(tag);
+            }
+            tag.setAttribute('content', content);
+        },
+
+        // One address per page. /calendar and /kalendarz are the same page in
+        // two spellings, and www is the same site as the apex - left alone,
+        // a crawler treats them as duplicates and picks a winner itself.
+        setCanonical(path) {
+            let tag = document.head.querySelector('link[rel="canonical"]');
+            if (!tag) {
+                tag = document.createElement('link');
+                tag.setAttribute('rel', 'canonical');
+                document.head.appendChild(tag);
+            }
+            const host = location.host.replace(/^www\./, '');
+            tag.setAttribute('href', `${location.protocol}//${host}${path}`);
         },
 
         t(key) {

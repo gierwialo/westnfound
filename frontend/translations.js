@@ -4,6 +4,13 @@ const translations = {
         title: "Gdzie na Westa?",
         subtitle: "Najbliższe wydarzenie taneczne",
 
+        // Shown to search engines, not on the page. {city} is filled in only
+        // when more than one city exists - see updateDescription() in app.js.
+        metaDescription: "Najbliższe imprezy i warsztaty West Coast Swing — data, miejsce i odliczanie do startu.",
+        metaDescriptionCity: "Najbliższe imprezy i warsztaty West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
+        metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
+        metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
+
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
         errorTitle: "Ups! Coś poszło nie tak",
@@ -68,6 +75,13 @@ const translations = {
         // Header
         title: "Where to West?",
         subtitle: "Next dance event",
+
+        // Shown to search engines, not on the page. {city} is filled in only
+        // when more than one city exists - see updateDescription() in app.js.
+        metaDescription: "Upcoming West Coast Swing parties and workshops - date, venue and a countdown to the start.",
+        metaDescriptionCity: "Upcoming West Coast Swing parties and workshops in {city} - date, venue and a countdown to the start.",
+        metaDescriptionCalendar: "West Coast Swing event calendar - every party and workshop, ready to subscribe to on your phone.",
+        metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and workshop, ready to subscribe to on your phone.",
 
         // Loading & Error states
         loading: "Loading event...",
