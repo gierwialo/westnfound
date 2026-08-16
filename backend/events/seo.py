@@ -62,14 +62,17 @@ class RobotsView(View):
             '',
         ]
         response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
-        # A short, explicit lifetime rather than no-cache. Cloudflare caches
-        # .txt on its own and, where the origin gives it nothing definite to
-        # respect, stamps its own four-hour default on the way out - which is
-        # how the old fall-through answer outlived the fix for it by an
-        # afternoon. `no-cache` counts as nothing definite; a number does not,
-        # which is why styles.css keeps the year it asks for. Five minutes
-        # spares the origin nothing worth measuring and makes the next change
-        # visible while someone is still watching for it.
+        # What this file should live for. Whether anyone downstream agrees is
+        # another matter: measured 2026-08-16, the zone's Browser Cache TTL of
+        # four hours behaves as a floor rather than a default, so Cloudflare
+        # rewrites max-age=300 to max-age=14400 on the way out, while
+        # styles.css keeps the year it asks for because a year is above the
+        # floor. Neither no-cache nor a small number survives that on its own.
+        #
+        # It takes a cache rule in Cloudflare, scoped to this path, for the
+        # value below to be the one a reader actually sees. The header stays
+        # regardless: it is the origin saying what it means, and it is what
+        # the rule will defer to.
         response['Cache-Control'] = 'public, max-age=300'
         return response
 
