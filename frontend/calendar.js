@@ -18,8 +18,17 @@ function calendarPage() {
         isNarrow: false,
         FETCH_TIMEOUT_MS: 15 * 1000,
 
+        // Podawany przez /api/calendar/, bo tylko serwer wie, pod jakim adresem
+        // mieszka to miasto. Skladany tu wczesniej z location.origin wiazal
+        // kazdego, kto subskrybowal z apeksu, z gdzienawesta.com zamiast
+        // z Warszawa - a subskrypcje ustawia sie raz i nikt do niej nie wraca.
+        // Awaryjnie zostaje stary sposob: lepiej podac adres z tego hosta niz
+        // pusty, gdy zapytanie do API nie doszlo.
+        feedUrlFromApi: '',
+
         get feedUrl() {
-            return `${location.origin}/${this.t('calendarPath')}.ics`;
+            return this.feedUrlFromApi
+                || `${location.origin}/${this.t('calendarPath')}.ics`;
         },
 
         get webcalUrl() {
@@ -48,9 +57,7 @@ function calendarPage() {
 
         init() {
             this.initLanguage();
-            // The Polish spelling is the one address this page keeps, whichever
             // of the four the visitor arrived through.
-            this.setCanonical('/kalendarz');
             this.updateDescription();
             this.isNarrow = window.innerWidth < this.NARROW_PX;
             this.load();
@@ -99,10 +106,12 @@ function calendarPage() {
                 : this.t('metaDescriptionCalendar'));
         },
 
-        // Description and canonical address are for crawlers, not for the
-        // page. Both have to be set here rather than in the HTML: the file is
-        // one static document served for every city, so a fixed canonical
-        // would point Łódź and Kraków at the apex and ask Google to drop them.
+        // The description is for crawlers, not for the page. Django writes
+        // one per city before the document leaves the server; this rewrites
+        // it once the reader's language is known, which only the browser can
+        // tell us - it lives in localStorage and arrives with no request.
+        // The canonical address is set server-side only, so a crawler sees it
+        // whether or not it runs any of this.
         setMeta(name, content) {
             let tag = document.head.querySelector(`meta[name="${name}"]`);
             if (!tag) {
@@ -113,19 +122,6 @@ function calendarPage() {
             tag.setAttribute('content', content);
         },
 
-        // The page answers to /kalendarz and /calendar alike, and www is the
-        // same site as the apex. One canonical address for all four, so a
-        // crawler is not left picking a winner among duplicates.
-        setCanonical(path) {
-            let tag = document.head.querySelector('link[rel="canonical"]');
-            if (!tag) {
-                tag = document.createElement('link');
-                tag.setAttribute('rel', 'canonical');
-                document.head.appendChild(tag);
-            }
-            const host = location.host.replace(/^www\./, '');
-            tag.setAttribute('href', `${location.protocol}//${host}${path}`);
-        },
 
         t(key) {
             return translations[this.currentLang]?.[key] || key;
@@ -154,6 +150,7 @@ function calendarPage() {
                 }
 
                 this.city = data.city;
+                this.feedUrlFromApi = data.feed_url || '';
                 this.calendarId = data.calendar_id;
                 this.timezone = data.timezone;
                 this.googleUrl = data.google_url;

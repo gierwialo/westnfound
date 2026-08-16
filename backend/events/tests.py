@@ -584,3 +584,136 @@ class TranslationParityTests(TestCase):
             found = re.search(rf'^        {key}: "(.*?)",$', source, re.M)
             self.assertIsNotNone(found, f'{key} missing from translations.js')
             self.assertEqual(found.group(1), value, key)
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class CanonicalHostTests(TestCase):
+    """The default city has two addresses; only one of them is published."""
+
+    def setUp(self):
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+
+        import tempfile
+        from events import documents
+        self.dir = Path(tempfile.mkdtemp())
+        page = ('<html lang="pl"><head>'
+                '<meta name="description" content="x"><title>x</title>'
+                '</head><body></body></html>')
+        (self.dir / 'index.html').write_text(page, encoding='utf-8')
+        (self.dir / 'calendar.html').write_text(page, encoding='utf-8')
+        self._old = documents.FRONTEND_DIR
+        documents.FRONTEND_DIR = self.dir
+        documents._cache.clear()
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        from events import documents
+        documents.FRONTEND_DIR = self._old
+        documents._cache.clear()
+
+    def _canonical(self, path, host):
+        body = self.client.get(path, HTTP_HOST=host).content.decode()
+        import re
+        found = re.search(r'<link rel="canonical" href="([^"]+)"', body)
+        self.assertIsNotNone(found, f'brak canonical na {host}{path}')
+        return found.group(1)
+
+    def test_each_city_points_at_itself(self):
+        self.assertEqual(self._canonical('/', 'gdzienawesta.com'),
+                         'https://gdzienawesta.com/')
+        self.assertEqual(self._canonical('/', 'lodz.gdzienawesta.com'),
+                         'https://lodz.gdzienawesta.com/')
+
+    def test_both_spellings_of_the_calendar_page_name_one_address(self):
+        for path in ('/kalendarz', '/kalendarz/', '/calendar', '/calendar/'):
+            self.assertEqual(self._canonical(path, 'lodz.gdzienawesta.com'),
+                             'https://lodz.gdzienawesta.com/kalendarz', path)
+
+    def test_the_default_citys_subdomain_sends_you_to_the_apex(self):
+        for path, target in (('/', 'https://gdzienawesta.com/'),
+                             ('/kalendarz', 'https://gdzienawesta.com/kalendarz'),
+                             ('/calendar/', 'https://gdzienawesta.com/kalendarz')):
+            response = self.client.get(path, HTTP_HOST='warszawa.gdzienawesta.com')
+            self.assertEqual(response.status_code, 302, path)
+            self.assertEqual(response['Location'], target, path)
+
+    def test_www_is_the_same_case(self):
+        response = self.client.get('/', HTTP_HOST='www.gdzienawesta.com')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], 'https://gdzienawesta.com/')
+
+    def test_the_redirect_is_temporary_because_the_apex_may_change_meaning(self):
+        # 301 would sit in browser caches for months and outlive the decision.
+        response = self.client.get('/', HTTP_HOST='warszawa.gdzienawesta.com')
+        self.assertEqual(response.status_code, 302)
+
+    def test_a_city_on_its_own_subdomain_is_not_redirected(self):
+        self.assertEqual(
+            self.client.get('/', HTTP_HOST='lodz.gdzienawesta.com').status_code, 200)
+
+    def test_an_unknown_city_is_kept_out_of_the_index(self):
+        body = self.client.get('/', HTTP_HOST='gdansk.gdzienawesta.com').content.decode()
+        self.assertIn('<meta name="robots" content="noindex">', body)
+        # No canonical: there is no other address this page is a copy of.
+        self.assertNotIn('rel="canonical"', body)
+
+    def test_a_real_city_is_not_marked_noindex(self):
+        for host in ('gdzienawesta.com', 'lodz.gdzienawesta.com'):
+            body = self.client.get('/', HTTP_HOST=host).content.decode()
+            self.assertNotIn('noindex', body, host)
+
+    def test_the_calendar_page_of_an_unknown_city_too(self):
+        body = self.client.get('/kalendarz',
+                               HTTP_HOST='gdansk.gdzienawesta.com').content.decode()
+        self.assertIn('<meta name="robots" content="noindex">', body)
+
+    def test_an_unknown_city_is_not_redirected_anywhere(self):
+        self.assertEqual(
+            self.client.get('/', HTTP_HOST='gdansk.gdzienawesta.com').status_code, 200)
+
+    def test_the_apex_does_not_redirect_to_itself(self):
+        self.assertEqual(
+            self.client.get('/', HTTP_HOST='gdzienawesta.com').status_code, 200)
+
+    def test_the_sitemap_of_the_second_address_defers_to_the_first(self):
+        response = self.client.get('/sitemap.xml', HTTP_HOST='warszawa.gdzienawesta.com')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], 'https://gdzienawesta.com/sitemap.xml')
+
+    def test_robots_on_the_second_address_names_the_first(self):
+        body = self.client.get('/robots.txt',
+                               HTTP_HOST='warszawa.gdzienawesta.com').content.decode()
+        self.assertIn('Sitemap: https://gdzienawesta.com/sitemap.xml', body)
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class FeedUrlTests(TestCase):
+    """What a new subscriber is handed."""
+
+    def setUp(self):
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+
+    def _feed(self, host):
+        import json
+        response = self.client.get('/api/calendar/', HTTP_HOST=host)
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content)['feed_url']
+
+    def test_the_apex_hands_out_the_address_of_the_city_not_its_own(self):
+        # The whole point: subscribing from the front page used to bind you to
+        # gdzienawesta.com rather than to Warsaw.
+        self.assertEqual(self._feed('gdzienawesta.com'),
+                         'https://warszawa.gdzienawesta.com/kalendarz.ics')
+
+    def test_a_city_hands_out_its_own(self):
+        self.assertEqual(self._feed('lodz.gdzienawesta.com'),
+                         'https://lodz.gdzienawesta.com/kalendarz.ics')
+
+    def test_local_work_stays_on_the_domain_in_front_of_it(self):
+        with override_settings(CITY_BASE_DOMAINS=['lvh.me']):
+            self.assertEqual(self._feed('lvh.me'),
+                             'http://warszawa.lvh.me/kalendarz.ics')

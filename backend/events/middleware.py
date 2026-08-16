@@ -76,3 +76,37 @@ class CityMiddleware:
             request.get_host(), settings.CITY_BASE_DOMAINS
         )
         return self.get_response(request)
+def canonical_host(raw_host: str, city, base_domains):
+    """The one address this city should be reached at, or None if we are there.
+
+    The default city lives on the apex, but its own subdomain answers too -
+    `resolve_city` finds it by slug like any other. Two addresses for one city
+    is a duplicate, and it only became one worth caring about when the site
+    started advertising its addresses in a sitemap.
+
+    `www` is the same case one step over: the same content under a name that
+    is not the one we publish.
+    """
+    host = _hostname(raw_host)
+    base = base_domain_for(raw_host, base_domains)
+    if base is None or city is None:
+        # An unrecognised host or a subdomain naming no city we serve: nothing
+        # to redirect to that would be more correct than where we already are.
+        return None
+    # A city that is not the default is only ever reached through its own
+    # slug - resolve_city matches on nothing else - so it is already where it
+    # belongs. Only the default city has a second address.
+    if not city.is_default:
+        return None
+    return None if host == base else base
+# Hosty, na ktorych https nie jest tym, czego uzywa odwiedzajacy. Cala reszta
+# jest publiczna i stoi za Cloudflare, ktory konczy TLS - a origin nie ma jak
+# tego stwierdzic, bo warstwa edge nadpisuje X-Forwarded-Proto wlasnym schematem.
+LOCAL_HOSTS = ('localhost', '127.0.0.1', '::1', 'lvh.me')
+
+
+def scheme_for(raw_host: str) -> str:
+    host = _hostname(raw_host)
+    if host in LOCAL_HOSTS or host.endswith('.lvh.me') or host.endswith('.local'):
+        return 'http'
+    return 'https'
