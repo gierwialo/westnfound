@@ -61,7 +61,14 @@ class RobotsView(View):
             f'Sitemap: {_scheme_for(host)}://{host}/sitemap.xml',
             '',
         ]
-        return HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
+        response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
+        # Cloudflare caches .txt by default for four hours, which is how the
+        # old fall-through answer outlived its own fix. The same guard the
+        # edge already puts on bootstrap.json, for the same reason: a file
+        # that is read rarely and changed rarely is exactly the one nobody
+        # thinks to purge.
+        response['Cache-Control'] = 'no-cache'
+        return response
 
 
 class SitemapView(View):

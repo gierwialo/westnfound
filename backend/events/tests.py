@@ -398,6 +398,10 @@ class RobotsTests(TestCase):
         body = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com').content
         self.assertNotIn(b'<html', body)
 
+    def test_it_is_not_left_to_cloudflares_four_hour_default(self):
+        response = self.client.get('/robots.txt', HTTP_HOST='gdzienawesta.com')
+        self.assertEqual(response['Cache-Control'], 'no-cache')
+
     def test_local_development_is_not_told_to_use_https(self):
         response = self.client.get('/robots.txt', HTTP_HOST='localhost:8000')
         self.assertIn('Sitemap: http://localhost:8000/sitemap.xml',
