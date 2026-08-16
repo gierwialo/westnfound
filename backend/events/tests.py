@@ -653,6 +653,22 @@ class CanonicalHostTests(TestCase):
         self.assertEqual(
             self.client.get('/', HTTP_HOST='lodz.gdzienawesta.com').status_code, 200)
 
+    def test_an_unknown_city_is_kept_out_of_the_index(self):
+        body = self.client.get('/', HTTP_HOST='gdansk.gdzienawesta.com').content.decode()
+        self.assertIn('<meta name="robots" content="noindex">', body)
+        # No canonical: there is no other address this page is a copy of.
+        self.assertNotIn('rel="canonical"', body)
+
+    def test_a_real_city_is_not_marked_noindex(self):
+        for host in ('gdzienawesta.com', 'lodz.gdzienawesta.com'):
+            body = self.client.get('/', HTTP_HOST=host).content.decode()
+            self.assertNotIn('noindex', body, host)
+
+    def test_the_calendar_page_of_an_unknown_city_too(self):
+        body = self.client.get('/kalendarz',
+                               HTTP_HOST='gdansk.gdzienawesta.com').content.decode()
+        self.assertIn('<meta name="robots" content="noindex">', body)
+
     def test_an_unknown_city_is_not_redirected_anywhere(self):
         self.assertEqual(
             self.client.get('/', HTTP_HOST='gdansk.gdzienawesta.com').status_code, 200)

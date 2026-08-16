@@ -131,9 +131,19 @@ class DocumentView(View):
         # every city, so a fixed canonical would point Łódź and Kraków at the
         # apex. It used to be set by app.js, which meant a crawler saw it only
         # if it ran our JavaScript.
-        link = (f'<link rel="canonical" href="{scheme_for(request.get_host())}://'
-                f'{request.get_host()}{self.canonical_path}">')
-        page = page.replace(HEAD_END, f'    {link}\n{HEAD_END}', 1)
+        #
+        # A host naming no city we serve gets noindex instead. That page is an
+        # apology with a list of the cities that do exist - worth showing to
+        # the person who typed the address, worth nothing in a search result,
+        # and there is no honest canonical for it to point at. Its sitemap
+        # already answers 404 for the same reason.
+        if city is None:
+            tag = '<meta name="robots" content="noindex">'
+        else:
+            host = request.get_host()
+            tag = (f'<link rel="canonical" href="{scheme_for(host)}://'
+                   f'{host}{self.canonical_path}">')
+        page = page.replace(HEAD_END, f'    {tag}\n{HEAD_END}', 1)
 
         return HttpResponse(page, content_type='text/html; charset=utf-8')
 
