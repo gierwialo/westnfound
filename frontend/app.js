@@ -40,7 +40,6 @@ function eventApp() {
 
         init() {
             this.initLanguage();
-            this.setCanonical('/');
             this.updateDescription();
             this.loadCities();
             // Every load schedules the next one, so there is one timer, and a
@@ -162,10 +161,12 @@ function eventApp() {
                 : this.t('metaDescription'));
         },
 
-        // Description and canonical address are for crawlers, not for the
-        // page. Both have to be set here rather than in the HTML: the file is
-        // one static document served for every city, so a fixed canonical
-        // would point Łódź and Kraków at the apex and ask Google to drop them.
+        // The description is for crawlers, not for the page. Django writes
+        // one per city before the document leaves the server; this rewrites
+        // it once the reader's language is known, which only the browser can
+        // tell us - it lives in localStorage and arrives with no request.
+        // The canonical address is set server-side only, so a crawler sees it
+        // whether or not it runs any of this.
         setMeta(name, content) {
             let tag = document.head.querySelector(`meta[name="${name}"]`);
             if (!tag) {
@@ -176,19 +177,6 @@ function eventApp() {
             tag.setAttribute('content', content);
         },
 
-        // One address per page. /calendar and /kalendarz are the same page in
-        // two spellings, and www is the same site as the apex - left alone,
-        // a crawler treats them as duplicates and picks a winner itself.
-        setCanonical(path) {
-            let tag = document.head.querySelector('link[rel="canonical"]');
-            if (!tag) {
-                tag = document.createElement('link');
-                tag.setAttribute('rel', 'canonical');
-                document.head.appendChild(tag);
-            }
-            const host = location.host.replace(/^www\./, '');
-            tag.setAttribute('href', `${location.protocol}//${host}${path}`);
-        },
 
         t(key) {
             return translations[this.currentLang]?.[key] || key;

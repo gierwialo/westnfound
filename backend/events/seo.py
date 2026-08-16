@@ -12,30 +12,17 @@ Both responses depend on the Host header, exactly like the rest of the site.
 """
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.views import View
 from xml.sax.saxutils import escape
 
-from .middleware import base_domain_for
+from .middleware import base_domain_for, canonical_host, scheme_for
 from .models import City
 
 # Addresses worth offering to a crawler, in the site's own language. The page
 # answers to /calendar as well, but the two spellings are one page, so listing
 # both would be asking Google to pick a favourite between duplicates.
 CITY_PATHS = ['/', '/kalendarz']
-
-# Hosts where https is not what the visitor is using. Everything else is
-# public and behind Cloudflare, which terminates TLS - and the origin cannot
-# tell, because the edge overwrites X-Forwarded-Proto with its own scheme.
-LOCAL_HOSTS = ('localhost', '127.0.0.1', '::1', 'lvh.me')
-
-
-def _scheme_for(host: str) -> str:
-    bare = host.partition(':')[0]
-    if bare in LOCAL_HOSTS or bare.endswith('.lvh.me') or bare.endswith('.local'):
-        return 'http'
-    return 'https'
-
 
 def _host_of(city: City, base: str) -> str:
     """The address a city answers on: the apex for the default, else its own."""
@@ -52,13 +39,18 @@ class RobotsView(View):
 
     def get(self, request):
         host = request.get_host()
+        # Point at the sitemap of the address this city actually keeps. The
+        # default city answers on its own subdomain too, and naming that copy
+        # here would advertise the duplicate we are trying to retire.
+        named = canonical_host(host, getattr(request, 'city', None),
+                               settings.CITY_BASE_DOMAINS) or host
         lines = [
             'User-agent: *',
             'Allow: /',
             '',
             # The admin panel lives behind a configurable path and is not
             # linked from anywhere; naming it here would only advertise it.
-            f'Sitemap: {_scheme_for(host)}://{host}/sitemap.xml',
+            f'Sitemap: {scheme_for(named)}://{named}/sitemap.xml',
             '',
         ]
         response = HttpResponse('\n'.join(lines), content_type='text/plain; charset=utf-8')
@@ -88,12 +80,19 @@ class SitemapView(View):
 
     def get(self, request):
         host = request.get_host()
-        scheme = _scheme_for(host)
+        scheme = scheme_for(host)
         base = (
             base_domain_for(host, settings.CITY_BASE_DOMAINS)
             or settings.CITY_BASE_DOMAINS[0]
         )
         city = getattr(request, 'city', None)
+
+        # The default city keeps one sitemap, at the apex. Its subdomain
+        # answers with the same four addresses, and two sitemaps offering one
+        # set of pages is the duplicate said out loud.
+        elsewhere = canonical_host(host, city, settings.CITY_BASE_DOMAINS)
+        if elsewhere:
+            return HttpResponseRedirect(f'{scheme_for(elsewhere)}://{elsewhere}/sitemap.xml')
 
         # A host naming no city we serve shows an apology, not a page worth
         # indexing - offering a sitemap for it would invite exactly that.

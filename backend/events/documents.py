@@ -16,10 +16,20 @@ import os
 import re
 from pathlib import Path
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.views import View
 
+from django.conf import settings
+
+from .middleware import canonical_host, scheme_for
 from .models import City
+
+# Przekierowanie CZASOWE, nie trwałe, i to jest decyzja, nie przeoczenie.
+# Właściciel przewiduje, że pod apeksem może kiedyś stanąć co innego niż
+# miasto domyślne; wtedy `warszawa.` musi znów pokazywać Warszawę. Trwałe
+# przekierowanie siedzi w pamięci przeglądarek miesiącami i takiego powrotu
+# nie da się ogłosić. Zmiana na 301 to podmiana tej jednej liczby.
+REDIRECT_STATUS = 302
 
 FRONTEND_DIR = Path(os.environ.get('FRONTEND_DIR', '/frontend'))
 
@@ -49,6 +59,7 @@ DESCRIPTION_CALENDAR_CITY = (
 
 TITLE_TAG = re.compile(r'<title>.*?</title>', re.S)
 DESCRIPTION_TAG = re.compile(r'<meta name="description" content="[^"]*">')
+HEAD_END = '</head>'
 
 _cache = {}
 
@@ -86,8 +97,21 @@ class DocumentView(View):
     def description_for(self, city, city_count):
         raise NotImplementedError
 
+    # The address this page keeps, whichever spelling the visitor arrived
+    # through. /calendar and /kalendarz are one page; so are the apex and the
+    # subdomain of the default city.
+    canonical_path = '/'
+
     def get(self, request):
         city = getattr(request, 'city', None)
+
+        elsewhere = canonical_host(request.get_host(), city,
+                                   settings.CITY_BASE_DOMAINS)
+        if elsewhere:
+            return HttpResponseRedirect(
+                f'{scheme_for(request.get_host())}://{elsewhere}{self.canonical_path}',
+                status=REDIRECT_STATUS)
+
         # One city means the name adds nothing - the site is about that city
         # and says so. This is the rule app.js already follows through
         # namedCity, and the two must agree or the title changes under the
@@ -102,6 +126,14 @@ class DocumentView(View):
         page = DESCRIPTION_TAG.sub(
             lambda _: f'<meta name="description" content="{description}">',
             page, count=1)
+
+        # Written here rather than into the file: one static document serves
+        # every city, so a fixed canonical would point Łódź and Kraków at the
+        # apex. It used to be set by app.js, which meant a crawler saw it only
+        # if it ran our JavaScript.
+        link = (f'<link rel="canonical" href="{scheme_for(request.get_host())}://'
+                f'{request.get_host()}{self.canonical_path}">')
+        page = page.replace(HEAD_END, f'    {link}\n{HEAD_END}', 1)
 
         return HttpResponse(page, content_type='text/html; charset=utf-8')
 
@@ -122,6 +154,7 @@ class HomeView(DocumentView):
 
 class CalendarPageView(DocumentView):
     filename = 'calendar.html'
+    canonical_path = '/kalendarz'
 
     def title_for(self, city, city_count):
         base = f'{SITE_TITLE} - {CALENDAR_TITLE}'

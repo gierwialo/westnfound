@@ -158,6 +158,35 @@ class CalendarFeedView(View):
         return response
 
 
+def _feed_url(request, city):
+    """The address to hand out for subscribing to this city's calendar.
+
+    Deliberately the city's own subdomain, even when the visitor is standing
+    on the apex. The default city answers at both, and the page used to build
+    this address from wherever the reader happened to be - so everyone who
+    subscribed from the front page bound themselves to gdzienawesta.com rather
+    than to Warsaw. A subscription is set once and never revisited, so that
+    binding outlives any decision to give the apex a different meaning.
+
+    Existing subscriptions are left alone: the apex feed keeps working. This
+    only changes what new subscribers are given.
+
+    One spelling, not two. /calendar.ics answers the same, but a feed is not
+    read by a person and two addresses for one calendar is a distinction with
+    nothing behind it.
+    """
+    from django.conf import settings
+
+    from .middleware import base_domain_for, scheme_for
+
+    base = (
+        base_domain_for(request.get_host(), settings.CITY_BASE_DOMAINS)
+        or settings.CITY_BASE_DOMAINS[0]
+    )
+    host = f'{city.slug}.{base}'
+    return f'{scheme_for(host)}://{host}/kalendarz.ics'
+
+
 class CalendarInfoView(View):
     """What the calendar page needs to know about the city it is showing."""
 
@@ -172,6 +201,7 @@ class CalendarInfoView(View):
             'calendar_id': city.calendar_id,
             'timezone': DISPLAY_TIMEZONE,
             'google_url': _google_embed_url(city),
+            'feed_url': _feed_url(request, city),
         })
 
 
