@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 from datetime import timedelta
+from pathlib import Path
 
 import requests
 from django.core.cache import cache
@@ -451,3 +452,135 @@ class SitemapTests(TestCase):
         response = self.client.get('/sitemap.xml', HTTP_HOST='gdansk.gdzienawesta.com')
         self.assertEqual(response.status_code, 404)
         self.assertNotIn(b'<loc>', response.content)
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class DocumentTests(TestCase):
+    """The pages themselves, with the city filled in before anyone runs JS."""
+
+    PAGE = ('<!DOCTYPE html>\n<html lang="pl">\n<head>\n'
+            '<meta name="description" content="wyjściowy opis">\n'
+            '<title>Wyjściowy tytuł</title>\n</head>\n'
+            '<body><script src="app.js?v=abc"></script>\n'
+            '<!-- gtag G-FJYJF645WS --></body>\n</html>\n')
+
+    def setUp(self):
+        import tempfile
+        from events import documents
+
+        self.dir = Path(tempfile.mkdtemp())
+        (self.dir / 'index.html').write_text(self.PAGE, encoding='utf-8')
+        (self.dir / 'calendar.html').write_text(self.PAGE, encoding='utf-8')
+        self._old_dir = documents.FRONTEND_DIR
+        documents.FRONTEND_DIR = self.dir
+        documents._cache.clear()
+        self.addCleanup(self._restore)
+
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+
+    def _restore(self):
+        from events import documents
+        documents.FRONTEND_DIR = self._old_dir
+        documents._cache.clear()
+
+    def _head(self, path, host):
+        response = self.client.get(path, HTTP_HOST=host)
+        self.assertEqual(response.status_code, 200)
+        body = response.content.decode()
+        import re
+        return (re.search(r'<title>(.*?)</title>', body).group(1),
+                re.search(r'name="description" content="([^"]*)"', body).group(1),
+                body)
+
+    def test_each_city_gets_its_own_title(self):
+        apex, _, _ = self._head('/', 'gdzienawesta.com')
+        lodz, _, _ = self._head('/', 'lodz.gdzienawesta.com')
+        self.assertEqual(apex, 'Gdzie na Westa? - Warszawa')
+        self.assertEqual(lodz, 'Gdzie na Westa? - Łódź')
+
+    def test_each_city_gets_its_own_description(self):
+        _, apex, _ = self._head('/', 'gdzienawesta.com')
+        _, lodz, _ = self._head('/', 'lodz.gdzienawesta.com')
+        self.assertIn('Warszawa', apex)
+        self.assertIn('Łódź', lodz)
+        self.assertNotEqual(apex, lodz)
+
+    def test_the_cities_no_longer_serve_an_identical_document(self):
+        # The whole point: three hosts used to answer byte for byte the same.
+        _, _, apex = self._head('/', 'gdzienawesta.com')
+        _, _, lodz = self._head('/', 'lodz.gdzienawesta.com')
+        self.assertNotEqual(apex, lodz)
+
+    def test_a_single_city_is_not_named(self):
+        City.objects.filter(slug='lodz').delete()
+        title, description, _ = self._head('/', 'gdzienawesta.com')
+        self.assertEqual(title, 'Gdzie na Westa?')
+        self.assertNotIn('w mieście', description)
+
+    def test_the_calendar_page_names_its_city(self):
+        title, description, _ = self._head('/kalendarz', 'lodz.gdzienawesta.com')
+        self.assertEqual(title, 'Gdzie na Westa? - Kalendarz - Łódź')
+        self.assertIn('Łódź', description)
+
+    def test_every_spelling_of_the_calendar_page_answers(self):
+        for path in ('/kalendarz', '/kalendarz/', '/calendar', '/calendar/'):
+            self.assertEqual(self.client.get(path, HTTP_HOST='gdzienawesta.com')
+                             .status_code, 200, path)
+
+    def test_everything_else_in_the_page_is_handed_over_untouched(self):
+        # Analytics and the ?v= stamps are written into these files after
+        # deployment. Losing them here would be silent.
+        _, _, body = self._head('/', 'gdzienawesta.com')
+        self.assertIn('app.js?v=abc', body)
+        self.assertIn('G-FJYJF645WS', body)
+        self.assertIn('<html lang="pl">', body)
+
+    def test_a_redeployed_page_is_picked_up(self):
+        self._head('/', 'gdzienawesta.com')
+        (self.dir / 'index.html').write_text(
+            self.PAGE.replace('app.js?v=abc', 'app.js?v=zzz'), encoding='utf-8')
+        import os
+        os.utime(self.dir / 'index.html', ns=(0, 10 ** 18))
+        _, _, body = self._head('/', 'gdzienawesta.com')
+        self.assertIn('app.js?v=zzz', body)
+
+    def test_an_unknown_city_still_gets_a_page(self):
+        # The page itself explains it; answering with nothing would be worse.
+        title, _, _ = self._head('/', 'gdansk.gdzienawesta.com')
+        self.assertEqual(title, 'Gdzie na Westa?')
+
+
+class TranslationParityTests(TestCase):
+    """The Python strings must say what translations.js says.
+
+    Without this, documents.py is a second copy of wording that lives in the
+    frontend - and a copy nobody compares is a copy that drifts.
+    """
+
+    def _translations(self):
+        from events import documents
+
+        path = documents.FRONTEND_DIR / 'translations.js'
+        if not path.exists():
+            self.skipTest(f'translations.js not mounted at {path}')
+        return path.read_text(encoding='utf-8').split('    en:', 1)[0]
+
+    def test_wording_matches_the_frontend(self):
+        from events import documents
+
+        source = self._translations()
+        for key, value in (
+            ('title', documents.SITE_TITLE),
+            ('calendarTitle', documents.CALENDAR_TITLE),
+            ('metaDescription', documents.DESCRIPTION),
+            ('metaDescriptionCity', documents.DESCRIPTION_CITY.format(city='{city}')),
+            ('metaDescriptionCalendar', documents.DESCRIPTION_CALENDAR),
+            ('metaDescriptionCalendarCity',
+             documents.DESCRIPTION_CALENDAR_CITY.format(city='{city}')),
+        ):
+            import re
+            found = re.search(rf'^        {key}: "(.*?)",$', source, re.M)
+            self.assertIsNotNone(found, f'{key} missing from translations.js')
+            self.assertEqual(found.group(1), value, key)
