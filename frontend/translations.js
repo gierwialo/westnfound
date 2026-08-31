@@ -51,6 +51,7 @@ const translations = {
         footerCalendarDirect: "Kalendarz",
         footerApp: "Aplikacja na telefon",
         footerThanks: "Podziękowania",
+        footerSupport: "❤️ Wesprzyj projekt",
         calendarPath: "kalendarz",
 
         // Calendar page
@@ -123,6 +124,7 @@ const translations = {
         footerCalendarDirect: "Calendar",
         footerApp: "Mobile app",
         footerThanks: "Thanks",
+        footerSupport: "❤️ Support the project",
         calendarPath: "calendar",
 
         // Calendar page
