@@ -163,3 +163,9 @@ def _money_from_env(name):
 
 SUPPORT_ANNUAL_COST_PLN = _money_from_env('SUPPORT_ANNUAL_COST_PLN')
 SUPPORT_HISTORICAL_COST_PLN = _money_from_env('SUPPORT_HISTORICAL_COST_PLN')
+
+# Zbiórka na Zrzutce — token i identyfikator zbiórki. Token czyta WYŁĄCZNIE
+# serwer; do aplikacji i do frontendu jedzie już tylko gotowa liczba.
+# Brak którejkolwiek z tych wartości znaczy "bez paska postępu", a nie "zero".
+ZRZUTKA_TOKEN = os.environ.get('ZRZUTKA_TOKEN', '').strip()
+ZRZUTKA_WHIP_ROUND = os.environ.get('ZRZUTKA_WHIP_ROUND', '').strip()
