@@ -717,3 +717,78 @@ class FeedUrlTests(TestCase):
         with override_settings(CITY_BASE_DOMAINS=['lvh.me']):
             self.assertEqual(self._feed('lvh.me'),
                              'http://warszawa.lvh.me/kalendarz.ics')
+
+
+@override_settings(
+    SUPPORT_ENABLED=True,
+    SUPPORT_PAGE_URL='https://app.gdzienawesta.com/support.html',
+    SUPPORT_ANNUAL_COST_PLN=565.69,
+    SUPPORT_HISTORICAL_COST_PLN=3331.39,
+)
+class SupportInfoTests(TestCase):
+    """Wsparcie kosztów: jedno źródło prawdy dla strony i aplikacji.
+
+    Kwoty podajemy tu jawnie, bo w kodzie NIE MA wartości domyślnych — to
+    repozytorium jest publiczne i historia gita wieczna.
+    """
+
+    def test_returns_url_and_both_totals(self):
+        response = self.client.get('/api/support-info/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {
+            'url': 'https://app.gdzienawesta.com/support.html',
+            'annualCostPln': 565.69,
+            'historicalCostPln': 3331.39,
+        })
+
+    @override_settings(
+        SUPPORT_ANNUAL_COST_PLN=600.0,
+        SUPPORT_HISTORICAL_COST_PLN=4000.0,
+        SUPPORT_PAGE_URL='https://app.gdzienawesta.com/wsparcie.html',
+    )
+    def test_reads_the_values_from_settings(self):
+        # Sedno tego endpointu: podwyżka u Apple'a ma być zmianą zmiennej
+        # środowiskowej, a nie edycją strony w dwóch językach.
+        body = self.client.get('/api/support-info/').json()
+
+        self.assertEqual(body['annualCostPln'], 600.0)
+        self.assertEqual(body['historicalCostPln'], 4000.0)
+        self.assertEqual(body['url'], 'https://app.gdzienawesta.com/wsparcie.html')
+
+    @override_settings(SUPPORT_ENABLED=False)
+    def test_switch_hides_the_data_entirely(self):
+        """Wyłącznik oddaje BRAK, a nie zera.
+
+        Czytający ma wtedy nie pokazać karty wsparcia w ogóle. Odpowiedź 200
+        z flagą kusiłaby, żeby narysować kartę mimo wszystko — z pustymi
+        liczbami, co wygląda jak usterka, a nie jak decyzja.
+        """
+        response = self.client.get('/api/support-info/')
+
+        self.assertEqual(response.status_code, 404)
+        self.assertNotIn('annualCostPln', response.json())
+
+    @override_settings(SUPPORT_ANNUAL_COST_PLN=None)
+    def test_missing_amount_is_not_a_zero(self):
+        """Brak zmiennej środowiskowej znaczy "nie wiem", nie "zero zł".
+
+        Endpoint z połową liczb byłby gorszy niż żaden: strona narysowałaby
+        koszt roczny jako pusty, a to wygląda na pomiar, nie na brak.
+        """
+        response = self.client.get('/api/support-info/')
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_is_readable_from_the_support_page_origin(self):
+        # Strona stoi pod app.gdzienawesta.com, endpoint pod apeksem, więc bez
+        # tego nagłówka przeglądarka odrzuciłaby odpowiedź.
+        response = self.client.get(
+            '/api/support-info/',
+            HTTP_ORIGIN='https://app.gdzienawesta.com',
+        )
+
+        self.assertEqual(
+            response['Access-Control-Allow-Origin'],
+            'https://app.gdzienawesta.com',
+        )

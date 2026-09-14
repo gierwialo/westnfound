@@ -121,3 +121,45 @@ CORS_ALLOW_CREDENTIALS = True
 
 # Google Calendar API (optional - for public calendars)
 GOOGLE_CALENDAR_API_KEY = os.environ.get('GOOGLE_CALENDAR_API_KEY', '')
+
+
+# Wsparcie kosztów projektu — jedno źródło prawdy dla strony i aplikacji.
+#
+# Kwoty i adres czyta `GET /api/support-info`. Dotąd żyły w dwóch miejscach:
+# wpisane wprost w `support.html` i w dokumentacji. Zmiana ceny u Apple'a albo
+# u rejestratora domeny to odtąd zmienna środowiskowa, a nie edycja strony.
+#
+# KWOTY NIE MAJĄ WARTOŚCI DOMYŚLNYCH I TO JEST CELOWE. To repozytorium jest
+# publiczne, a historia gita wieczna — liczby wpisane tu jako domyślne zostałyby
+# w niej na zawsze, a brain trzyma koszty projektu poza `web/` właśnie z tego
+# powodu. Brak zmiennej znaczy więc "nie wiem", a nie "weź tę liczbę": endpoint
+# oddaje wtedy 404, a strona pokazuje swoją kopię awaryjną.
+SUPPORT_ENABLED = os.environ.get('SUPPORT_ENABLED', 'True') == 'True'
+
+# Adres NASZEJ strony wsparcia — to on jedzie w endpoincie i na niego prowadzi
+# przycisk w aplikacji. To NIE jest adres zbiórki: na Zrzutkę prowadzi dopiero
+# przycisk na samej stronie, i ten adres żyje w `support.html`. Reguła
+# komunikacji: podajemy zawsze naszą stronę, nigdy adres operatora wprost.
+SUPPORT_PAGE_URL = os.environ.get(
+    'SUPPORT_PAGE_URL', 'https://app.gdzienawesta.com/support.html'
+)
+
+
+def _money_from_env(name):
+    """Złotówki ze zmiennej środowiskowej, albo None.
+
+    Zepsuta wartość zachowuje się jak brak — lepiej nie oddać nic, niż oddać
+    zero, bo "0 zł kosztów" to zdanie, które wygląda jak pomiar.
+    """
+    raw = os.environ.get(name, '').strip()
+    if not raw:
+        return None
+    try:
+        value = float(raw.replace(',', '.'))
+    except ValueError:
+        return None
+    return value if value > 0 else None
+
+
+SUPPORT_ANNUAL_COST_PLN = _money_from_env('SUPPORT_ANNUAL_COST_PLN')
+SUPPORT_HISTORICAL_COST_PLN = _money_from_env('SUPPORT_HISTORICAL_COST_PLN')
