@@ -717,3 +717,47 @@ class FeedUrlTests(TestCase):
         with override_settings(CITY_BASE_DOMAINS=['lvh.me']):
             self.assertEqual(self._feed('lvh.me'),
                              'http://warszawa.lvh.me/kalendarz.ics')
+
+
+class SlotMarkerTests(TestCase):
+    """Every page offers the same three places for a deployment's additions.
+
+    A deployment may add things this repository does not carry - analytics,
+    an announcement - and it finds the place for them by these comments. They
+    are the whole contract: a page that loses one keeps working and simply
+    stops getting the addition, with no error anywhere. Hence a test.
+    """
+
+    FRONTEND = Path(__file__).resolve().parents[2] / 'frontend'
+    MARKERS = ('<!-- slot:head-end -->', '<!-- slot:body-start -->',
+               '<!-- slot:body-end -->')
+
+    def _pages(self):
+        pages = sorted(self.FRONTEND.glob('*.html'))
+        self.assertTrue(pages)
+        return [(page.name, page.read_text(encoding='utf-8')) for page in pages]
+
+    def test_every_page_has_each_marker_once(self):
+        for name, html in self._pages():
+            for marker in self.MARKERS:
+                self.assertEqual(html.count(marker), 1, f'{name}: {marker}')
+
+    def test_markers_sit_where_their_names_say(self):
+        import re
+        for name, html in self._pages():
+            head_end = html.index('</head>')
+            body_open = re.search(r'<body[^>]*>', html)
+            body_close = html.index('</body>')
+            self.assertLess(html.index(self.MARKERS[0]), head_end, name)
+            # Nothing but whitespace between <body ...> and the first marker,
+            # and between the last marker and </body>.
+            self.assertEqual(
+                html[body_open.end():html.index(self.MARKERS[1])].strip(), '', name)
+            end = html.index(self.MARKERS[2]) + len(self.MARKERS[2])
+            self.assertEqual(html[end:body_close].strip(), '', name)
+
+    def test_no_page_has_a_bare_body_tag(self):
+        # An older deployment matched a bare <body> to add its banner. Keeping
+        # it out means a page never gets that and the marker's addition twice.
+        for name, html in self._pages():
+            self.assertNotIn('<body>', html, name)
