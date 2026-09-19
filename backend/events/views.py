@@ -2,7 +2,7 @@ from urllib.parse import quote
 
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
 from django.views import View
-from .services import CalendarFeedService, GoogleCalendarService, ZrzutkaService
+from .services import CalendarFeedService, GoogleCalendarService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -240,58 +240,3 @@ class CitiesView(View):
             'count': len(cities),
             'current': current.slug if current else None,
         })
-
-
-class SupportInfoView(View):
-    """Where to support the project and what it has cost so far.
-
-    One source of truth for two readers: the support page on
-    app.gdzienawesta.com and the mobile app. Both used to carry their own
-    copy of the amounts - the page still keeps an itemised breakdown, but the
-    totals it shows come from here, so a price change is an environment
-    variable rather than an edit in two places.
-
-    Deliberately narrow: the URL and two totals, nothing else. The breakdown
-    of what was bought is explanatory detail for the page, and the mobile
-    slide shows only the totals.
-    """
-
-    def get(self, request):
-        from django.conf import settings
-
-        amounts_known = (
-            settings.SUPPORT_ANNUAL_COST_PLN is not None
-            and settings.SUPPORT_HISTORICAL_COST_PLN is not None
-        )
-        if not settings.SUPPORT_ENABLED or not amounts_known:
-            # Not "enabled: false" but an honest absence: the reader's rule is
-            # "no data means no support card", and a 200 carrying a flag
-            # invites someone to render the card anyway with blank numbers.
-            # Jedna odpowiedz na dwa powody - wylaczone i nieskonfigurowane -
-            # bo dla czytajacego znacza to samo: nie ma czego pokazac. Rozroznia
-            # je tresc komunikatu, zeby dalo sie to zdiagnozowac z zewnatrz.
-            return JsonResponse({
-                'error': 'Support unavailable',
-                'message': (
-                    'Fundraising is turned off' if not settings.SUPPORT_ENABLED
-                    else 'Support amounts are not configured'
-                ),
-            }, status=404)
-
-        body = {
-            'url': settings.SUPPORT_PAGE_URL,
-            'annualCostPln': settings.SUPPORT_ANNUAL_COST_PLN,
-            'historicalCostPln': settings.SUPPORT_HISTORICAL_COST_PLN,
-        }
-
-        # Zebrana kwota jest DODATKIEM, nie warunkiem. Gdy Zrzutka milczy i nie
-        # mamy nawet ostatniej dobrej kopii, klucza po prostu nie ma — czytający
-        # nie rysuje wtedy paska postępu. Zero byloby tu klamstwem: znaczyloby
-        # "nikt nie wplacil", a nie "nie wiemy".
-        collected = ZrzutkaService().collected(
-            settings.ZRZUTKA_WHIP_ROUND, settings.ZRZUTKA_TOKEN,
-        )
-        if collected is not None:
-            body['collectedPln'] = collected
-
-        return JsonResponse(body)

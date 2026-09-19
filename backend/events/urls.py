@@ -4,7 +4,6 @@ from .views import (
     CitiesView,
     NextEventView,
     NextEventsView,
-    SupportInfoView,
 )
 
 urlpatterns = [
@@ -12,5 +11,4 @@ urlpatterns = [
     path('next-events/', NextEventsView.as_view(), name='next-events'),
     path('cities/', CitiesView.as_view(), name='cities'),
     path('calendar/', CalendarInfoView.as_view(), name='calendar-info'),
-    path('support-info/', SupportInfoView.as_view(), name='support-info'),
 ]
