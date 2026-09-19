@@ -258,7 +258,11 @@ function eventApp() {
         // The pieces of a "Potem" row: weekday and day of the month for the
         // tile, and the start time for the second line.
         shortWeekday(dateString) {
-            return new Date(dateString).toLocaleDateString(this.locale, { weekday: 'short' });
+            const date = new Date(dateString);
+            // The usual two-letter Polish abbreviations, Sunday first, as in
+            // the app: Intl spells them 2 to 6 letters, too wide for the tile.
+            if (this.currentLang === 'pl') return ['nd', 'pn', 'wt', 'śr', 'cz', 'pt', 'so'][date.getDay()];
+            return date.toLocaleDateString(this.locale, { weekday: 'short' });
         },
 
         dayOfMonth(dateString) {
