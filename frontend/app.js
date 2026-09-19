@@ -11,6 +11,13 @@ function eventApp() {
         inFlight: false,
         // Reading `now` is what ties the day badge to the clock; see init()
         now: Date.now(),
+        // The open sheet: null, 'details' or 'city'. `detail` is the event the
+        // details sheet shows, kept as its own object so a background refresh
+        // cannot change it under the reader.
+        sheet: null,
+        detail: null,
+        returnFocus: null,
+        shared: false,
 
         REFRESH_MS: 5 * 60 * 1000,
         // A refresh usually fails because the network has just gone away with
@@ -210,10 +217,14 @@ function eventApp() {
             }
         },
 
-        // The day badge on the next event, from the same rules as the app.
+        // The day badge on an event, from the same rules as the app.
         get badge() {
-            if (!this.event) return '';
-            const label = GnwModel.relativeDayLabel(this.event, new Date(this.now));
+            return this.badgeFor(this.event);
+        },
+
+        badgeFor(event) {
+            if (!event) return '';
+            const label = GnwModel.relativeDayLabel(event, new Date(this.now));
             switch (label.kind) {
                 case 'now': return this.t('badgeNow');
                 case 'today': return this.t('badgeToday');
@@ -243,8 +254,12 @@ function eventApp() {
 
         // Venue on the first line, street and city on the second.
         get where() {
+            return this.whereOf(this.event);
+        },
+
+        whereOf(event) {
             const cityName = this.currentCity ? this.currentCity.name : '';
-            return GnwModel.splitLocation(this.event ? this.event.location : '', cityName);
+            return GnwModel.splitLocation(event ? event.location : '', cityName);
         },
 
         placeOf(location) {
@@ -273,11 +288,11 @@ function eventApp() {
             return new Date(dateString).toLocaleTimeString(this.locale, { hour: '2-digit', minute: '2-digit' });
         },
 
-        addToCalendar() {
-            if (!this.event) return;
+        addToCalendar(event) {
+            if (!event) return;
 
-            const startDate = new Date(this.event.start);
-            const endDate = new Date(this.event.end);
+            const startDate = new Date(event.start);
+            const endDate = new Date(event.end);
 
             // Format dates for Google Calendar (YYYYMMDDTHHmmssZ)
             const formatGoogleDate = (date) => {
@@ -287,22 +302,112 @@ function eventApp() {
             // Build Google Calendar URL
             const params = new URLSearchParams({
                 action: 'TEMPLATE',
-                text: this.event.title,
+                text: event.title,
                 dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
-                details: this.event.description || '',
-                location: this.event.location || '',
+                details: event.description || '',
+                location: event.location || '',
             });
 
             const url = `https://calendar.google.com/calendar/render?${params.toString()}`;
             window.open(url, '_blank');
         },
 
-        openNavigation() {
-            if (!this.event?.location) return;
+        openNavigation(event) {
+            if (!event?.location) return;
 
             // Google Maps URL with navigation
-            const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(this.event.location)}`;
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`;
             window.open(url, '_blank');
+        },
+
+        // --- Sheets --------------------------------------------------------
+
+        openDetails(event, domEvent) {
+            this.detail = event;
+            this.openSheet('details', domEvent);
+        },
+
+        openSheet(name, domEvent) {
+            this.returnFocus = (domEvent && domEvent.currentTarget) || document.activeElement;
+            this.sheet = name;
+            // The page behind must not scroll under a sheet.
+            document.documentElement.classList.add('sheet-open');
+            // Focus the dialog itself: it is announced by its name, and the
+            // first Tab goes to its first control.
+            this.$nextTick(() => this.$refs.sheetBox?.focus());
+        },
+
+        closeSheet() {
+            if (!this.sheet) return;
+            this.sheet = null;
+            this.detail = null;
+            document.documentElement.classList.remove('sheet-open');
+            const back = this.returnFocus;
+            this.returnFocus = null;
+            // A refresh may have replaced the element that opened the sheet.
+            if (back && back.isConnected) back.focus();
+        },
+
+        // Tab stays inside the open sheet.
+        trapFocus(domEvent) {
+            const box = this.$refs.sheetBox;
+            if (!this.sheet || !box) return;
+            const items = [...box.querySelectorAll('a[href], button:not([disabled])')]
+                .filter(el => el.offsetParent !== null);
+            if (items.length === 0) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            const active = document.activeElement;
+            if (domEvent.shiftKey && (active === first || active === box || !box.contains(active))) {
+                domEvent.preventDefault();
+                last.focus();
+            } else if (!domEvent.shiftKey && (active === last || !box.contains(active))) {
+                domEvent.preventDefault();
+                first.focus();
+            }
+        },
+
+        // The description as the sheet shows it: the Facebook link pulled out
+        // into a row, the rest as text with its http(s) links marked.
+        get description() {
+            const event = this.detail;
+            if (!event) return { text: '', parts: [], facebook: null };
+            const facebook = GnwModel.extractFacebookLink(event.description);
+            const text = facebook ? facebook.textWithoutLink : GnwModel.stripHtml(event.description);
+            return { text, parts: GnwModel.linkify(text), facebook };
+        },
+
+        // An event with no end is shown by its date alone, not as 20:00-Invalid.
+        forModel(event) {
+            return event.end ? event : Object.assign({}, event, { allDay: true });
+        },
+
+        correctionHref(event) {
+            if (!event) return '#';
+            const city = this.currentCity ? this.currentCity.name : '';
+            const mail = GnwModel.correctionMail(
+                this.forModel(event), city, this.currentLang, translations[this.currentLang].correction);
+            return GnwModel.mailtoHref(mail);
+        },
+
+        // The system share sheet where the browser has one; otherwise the
+        // message goes to the clipboard, and the icon says so for two seconds.
+        async share(event) {
+            if (!event || !this.currentCity) return;
+            const text = GnwModel.shareMessage(
+                this.forModel(event), this.currentCity.slug, this.currentLang, translations[this.currentLang]);
+            try {
+                if (navigator.share) {
+                    await navigator.share({ text });
+                    return;
+                }
+                await navigator.clipboard.writeText(text);
+                this.shared = true;
+                setTimeout(() => { this.shared = false; }, 2000);
+            } catch (err) {
+                // Closing the share sheet rejects with AbortError; not a failure.
+                if (err && err.name !== 'AbortError') console.error('Error sharing:', err);
+            }
         }
     };
 }

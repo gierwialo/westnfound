@@ -39,6 +39,9 @@
     --skel-b: #f7f8fb;
     --warn-bg: #fef3c7;
     --warn-fg: #b45309;
+    --radio: #d1d5db;
+    --radio-on: #4f46e5;
+    --dim: rgba(15, 15, 30, 0.45);
 
     /* Used by the calendar page, which has not been restyled yet. */
     --primary-color: #6366f1;
@@ -76,6 +79,9 @@
         --skel-b: #30303f;
         --warn-bg: rgba(245, 158, 11, 0.18);
         --warn-fg: #fbbf24;
+        --radio: #4b4b5c;
+        --radio-on: #818cf8;
+        --dim: rgba(0, 0, 0, 0.6);
     }
 }
 
@@ -230,6 +236,28 @@ svg.i {
     height: 16px;
 }
 
+/* Round, 44 px to touch, hanging into the card's padding so the icon lines
+   up with the text above it. */
+.icon-btn {
+    width: 44px;
+    height: 44px;
+    margin: -9px -9px -9px 0;
+    border-radius: 22px;
+    display: grid;
+    place-items: center;
+    color: var(--text2);
+}
+
+.chev {
+    color: var(--chev);
+    display: flex;
+}
+
+.chev svg.i {
+    width: 18px;
+    height: 18px;
+}
+
 .h-title {
     color: #fff;
     font-size: 32px;
@@ -371,6 +399,11 @@ svg.i {
     margin-top: 10px;
 }
 
+.actions .btn {
+    flex: 1;
+    min-width: 0;
+}
+
 /* The two after it */
 .label-grad {
     color: #fff;
@@ -381,6 +414,10 @@ svg.i {
 }
 
 .mini {
+    /* A button: the whole row opens the details. */
+    width: 100%;
+    text-align: left;
+    color: var(--text);
     padding: 10px 12px;
     display: flex;
     align-items: center;
@@ -617,6 +654,322 @@ svg.i {
 
 .foot .love {
     font-weight: 700;
+}
+
+/* ==========================================================================
+   Sheets: event details and the city list. From the bottom on a phone, a
+   centered window from 600 px.
+   ========================================================================== */
+html.sheet-open {
+    overflow: hidden;
+}
+
+.sheet-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* A button, so a screen reader can close the sheet from it; sighted people
+   just tap outside. */
+.dim {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--dim);
+    cursor: default;
+}
+
+.bsheet {
+    position: relative;
+    width: 100%;
+    max-height: 92vh;
+    max-height: 92dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 26px 26px 0 0;
+    padding: 10px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.18);
+}
+
+.bsheet:focus {
+    outline: none;
+}
+
+.bsheet :focus-visible {
+    outline: 3px solid var(--strong);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .bsheet {
+        animation: sheet-up 0.22s ease-out;
+    }
+
+    .dim {
+        animation: dim-in 0.22s ease-out;
+    }
+}
+
+@keyframes sheet-up {
+    from { transform: translateY(24px); opacity: 0; }
+}
+
+@keyframes dim-in {
+    from { opacity: 0; }
+}
+
+.grab {
+    width: 38px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--radio);
+    margin: 0 auto 14px;
+}
+
+.bsheet h2 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    line-height: 27px;
+    padding: 0 4px;
+    overflow-wrap: anywhere;
+}
+
+.sheet-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0 4px;
+}
+
+.sheet-top h2 {
+    margin-top: 10px;
+    padding: 0;
+}
+
+/* 44 px to touch, a 36 px disc to look at. */
+.close-x {
+    position: relative;
+    width: 44px;
+    height: 44px;
+    margin: -4px -4px 0 0;
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--strong);
+}
+
+.close-x::before {
+    content: "";
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: var(--tint);
+}
+
+.close-x svg.i {
+    position: relative;
+    width: 18px;
+    height: 18px;
+}
+
+.lead2 {
+    font-size: 15px;
+    line-height: 21px;
+    color: var(--text2);
+    padding: 6px 4px 14px;
+}
+
+.group {
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--card);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.top-gap {
+    margin-top: 14px;
+}
+
+.sub-h {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    padding: 18px 8px 8px;
+}
+
+/* Rows: when and where, the description's links, the city list. A hairline
+   above every row but the first, inset past the icon. */
+.drow,
+.linkrow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    position: relative;
+}
+
+.drow + .drow::before,
+.linkrow + .linkrow::before,
+.desc + .linkrow::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 60px;
+    height: 0.5px;
+    background: var(--border);
+}
+
+/* Past a 40 px icon instead of a 36 px one. */
+.linkrow + .linkrow::before,
+.desc + .linkrow::before {
+    left: 64px;
+}
+
+.drow .tt b,
+.linkrow .tt b {
+    white-space: normal;
+    font-size: 16px;
+    overflow-wrap: anywhere;
+}
+
+.drow .tt span,
+.linkrow .tt span {
+    white-space: normal;
+    font-size: 14px;
+}
+
+.tbtn {
+    color: var(--strong);
+    font-size: 15px;
+    font-weight: 650;
+    height: 44px;
+    padding: 0 4px;
+    flex: none;
+    display: flex;
+    align-items: center;
+}
+
+.desc {
+    padding: 14px 16px;
+    font-size: 15px;
+    line-height: 21px;
+    /* The description's own line breaks, and nothing else. */
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+
+.desc a[href] {
+    color: var(--strong);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.fb {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: #1877f2;
+    color: #fff;
+    font: 900 25px/40px Helvetica, Arial, sans-serif;
+    text-align: center;
+    flex: none;
+}
+
+.sq {
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: var(--tint);
+    color: var(--strong);
+    display: grid;
+    place-items: center;
+    flex: none;
+}
+
+.opt {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 50px;
+    padding: 0 14px;
+    position: relative;
+    font-size: 16.5px;
+    font-weight: 600;
+}
+
+.opt + .opt::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 14px;
+    height: 0.5px;
+    background: var(--border);
+}
+
+.radio {
+    width: 22px;
+    height: 22px;
+    border-radius: 11px;
+    border: 2px solid var(--radio);
+    flex: none;
+    margin-left: auto;
+}
+
+.radio.on {
+    border: 7px solid var(--radio-on);
+}
+
+.addrow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 50px;
+    margin-top: 10px;
+    padding: 0 14px;
+    border-radius: 14px;
+    background: var(--tint);
+    color: var(--strong);
+    font-size: 15.5px;
+    font-weight: 650;
+}
+
+.addrow svg.i {
+    width: 19px;
+    height: 19px;
+}
+
+/* A window from 600 px. */
+@media (min-width: 600px) {
+    .sheet-layer {
+        align-items: center;
+        padding: 16px;
+    }
+
+    .bsheet {
+        width: 560px;
+        max-height: calc(100vh - 32px);
+        max-height: calc(100dvh - 32px);
+        border-radius: 24px;
+        padding: 22px 22px 18px;
+        box-shadow: 0 30px 60px rgba(0, 0, 0, 0.3);
+    }
+
+    .grab {
+        display: none;
+    }
 }
 
 /* Short windows: iPhone SE in Safari, and any phone inside the Messenger or
