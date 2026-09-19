@@ -51,7 +51,6 @@ const translations = {
 
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
-        errorTitle: "Ups! Coś poszło nie tak",
         footerCities: "Miasta:",
         unknownCityTitle: "Ojej, jeszcze nie wiemy, co się tam tańczy",
         unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy:",
@@ -74,12 +73,12 @@ const translations = {
         calendarTitle: "Kalendarz",
         calendarSubtitle: "Wszystkie wydarzenia w jednym miejscu",
         calendarLoading: "Ładowanie kalendarza...",
-        calendarSubscribe: "📅 Subskrybuj kalendarz",
-        calendarCopy: "🔗 Skopiuj adres",
-        calendarCopied: "✓ Skopiowano",
+        calendarSubscribeTitle: "Subskrybuj w telefonie",
+        calendarSubscribe: "Subskrybuj kalendarz",
+        calendarCopy: "Skopiuj adres",
+        calendarCopied: "Skopiowano",
         calendarOpenGoogle: "Otwórz w Google Calendar",
         calendarSubscribeHint: "Dodaj ten kalendarz do telefonu albo komputera — nowe wydarzenia będą się w nim pojawiać same.",
-        calendarBackToEvents: "← Najbliższe wydarzenia",
 
         // Language
         language: "Język",
@@ -138,7 +137,6 @@ const translations = {
 
         // Loading & Error states
         loading: "Loading event...",
-        errorTitle: "Oops! Something went wrong",
         footerCities: "Cities:",
         unknownCityTitle: "Oh! We don't know what's dancing there yet",
         unknownCityBody: "Maybe nobody has told us yet. Cities we're already dancing in:",
@@ -161,12 +159,12 @@ const translations = {
         calendarTitle: "Calendar",
         calendarSubtitle: "Every event in one place",
         calendarLoading: "Loading calendar...",
-        calendarSubscribe: "📅 Subscribe to calendar",
-        calendarCopy: "🔗 Copy address",
-        calendarCopied: "✓ Copied",
+        calendarSubscribeTitle: "Subscribe on your phone",
+        calendarSubscribe: "Subscribe to calendar",
+        calendarCopy: "Copy address",
+        calendarCopied: "Copied",
         calendarOpenGoogle: "Open in Google Calendar",
         calendarSubscribeHint: "Add this calendar to your phone or computer — new events will keep showing up on their own.",
-        calendarBackToEvents: "← Upcoming events",
 
         // Language
         language: "Language",

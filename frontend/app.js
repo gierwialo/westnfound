@@ -11,12 +11,11 @@ function eventApp() {
         inFlight: false,
         // Reading `now` is what ties the day badge to the clock; see init()
         now: Date.now(),
-        // The open sheet: null, 'details' or 'city'. `detail` is the event the
-        // details sheet shows, kept as its own object so a background refresh
-        // cannot change it under the reader.
-        sheet: null,
+        ...sheetsMixin(),
+        // The sheet is 'details' or 'city'. `detail` is the event the details
+        // sheet shows, kept as its own object so a background refresh cannot
+        // change it under the reader.
         detail: null,
-        returnFocus: null,
         shared: false,
 
         REFRESH_MS: 5 * 60 * 1000,
@@ -327,44 +326,8 @@ function eventApp() {
             this.openSheet('details', domEvent);
         },
 
-        openSheet(name, domEvent) {
-            this.returnFocus = (domEvent && domEvent.currentTarget) || document.activeElement;
-            this.sheet = name;
-            // The page behind must not scroll under a sheet.
-            document.documentElement.classList.add('sheet-open');
-            // Focus the dialog itself: it is announced by its name, and the
-            // first Tab goes to its first control.
-            this.$nextTick(() => this.$refs.sheetBox?.focus());
-        },
-
-        closeSheet() {
-            if (!this.sheet) return;
-            this.sheet = null;
+        onSheetClosed() {
             this.detail = null;
-            document.documentElement.classList.remove('sheet-open');
-            const back = this.returnFocus;
-            this.returnFocus = null;
-            // A refresh may have replaced the element that opened the sheet.
-            if (back && back.isConnected) back.focus();
-        },
-
-        // Tab stays inside the open sheet.
-        trapFocus(domEvent) {
-            const box = this.$refs.sheetBox;
-            if (!this.sheet || !box) return;
-            const items = [...box.querySelectorAll('a[href], button:not([disabled])')]
-                .filter(el => el.offsetParent !== null);
-            if (items.length === 0) return;
-            const first = items[0];
-            const last = items[items.length - 1];
-            const active = document.activeElement;
-            if (domEvent.shiftKey && (active === first || active === box || !box.contains(active))) {
-                domEvent.preventDefault();
-                last.focus();
-            } else if (!domEvent.shiftKey && (active === last || !box.contains(active))) {
-                domEvent.preventDefault();
-                first.focus();
-            }
         },
 
         // The description as the sheet shows it: the Facebook link pulled out

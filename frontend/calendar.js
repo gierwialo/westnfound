@@ -1,5 +1,6 @@
 function calendarPage() {
     return {
+        ...sheetsMixin(),
         loading: true,
         error: false,
         unknownCity: false,
@@ -165,9 +166,9 @@ function calendarPage() {
         },
 
         async loadCities() {
-            // Only the unknown-city card uses these, and it is the one case
-            // where the request above has already failed - so this one stands
-            // on its own and stays silent when it cannot deliver.
+            // The city chip, its sheet, the footer and the unknown-city card use
+            // these. The request stands on its own and stays silent when it
+            // cannot deliver: the calendar works without the list.
             try {
                 const response = await fetch('/api/cities/');
                 const data = await response.json();
