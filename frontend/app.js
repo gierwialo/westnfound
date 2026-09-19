@@ -4,18 +4,12 @@ function eventApp() {
         currentEventIndex: 0,
         loading: true,
         error: false,
-        errorMessage: '',
-        lastUpdate: '',
-        countdownInterval: null,
         currentLang: 'pl',
-        touchStartX: 0,
-        touchEndX: 0,
-        swipeHandlersInitialized: false,
         unknownCity: false,
         cities: [],
         refreshTimer: null,
         inFlight: false,
-        // Reading `now` is what ties the countdown to the clock; see startCountdown()
+        // Reading `now` is what ties the day badge to the clock; see init()
         now: Date.now(),
 
         REFRESH_MS: 5 * 60 * 1000,
@@ -53,6 +47,8 @@ function eventApp() {
             // Every load schedules the next one, so there is one timer, and a
             // failed refresh can come back sooner than a successful one.
             this.loadEvent();
+            // The badge says "today" or "tomorrow"; let it follow the clock.
+            setInterval(() => { this.now = Date.now(); }, 60 * 1000);
 
             // A phone whose screen was locked, or a laptop back from sleep,
             // returns with a timer that has not run for a while and possibly a
@@ -70,62 +66,6 @@ function eventApp() {
                 () => this.loadEvent({ background: true }),
                 delay
             );
-        },
-
-        initSwipeHandlers() {
-            // Only initialize once to prevent duplicate event listeners
-            if (this.swipeHandlersInitialized) return;
-
-            const container = document.querySelector('.event-card');
-            if (!container) return;
-
-            container.addEventListener('touchstart', (e) => {
-                this.touchStartX = e.changedTouches[0].screenX;
-            });
-
-            container.addEventListener('touchend', (e) => {
-                this.touchEndX = e.changedTouches[0].screenX;
-                this.handleSwipe();
-            });
-
-            this.swipeHandlersInitialized = true;
-        },
-
-        handleSwipe() {
-            const swipeThreshold = 50;
-            const diff = this.touchStartX - this.touchEndX;
-
-            if (Math.abs(diff) > swipeThreshold) {
-                if (diff > 0) {
-                    // Swipe left - next event
-                    this.nextEvent();
-                } else {
-                    // Swipe right - previous event
-                    this.previousEvent();
-                }
-            }
-        },
-
-        nextEvent() {
-            if (this.currentEventIndex < this.events.length - 1) {
-                this.currentEventIndex++;
-                this.startCountdown();
-            }
-        },
-
-        previousEvent() {
-            if (this.currentEventIndex > 0) {
-                this.currentEventIndex--;
-                this.startCountdown();
-            }
-        },
-
-        hasNextEvent() {
-            return this.currentEventIndex < this.events.length - 1;
-        },
-
-        hasPreviousEvent() {
-            return this.currentEventIndex > 0;
         },
 
         initLanguage() {
@@ -255,18 +195,13 @@ function eventApp() {
 
                 this.events = data.events || [];
                 this.currentEventIndex = 0;
-                this.lastUpdate = new Date().toLocaleTimeString(this.currentLang + '-' + this.currentLang.toUpperCase());
                 this.error = false;
-                this.startCountdown();
+                this.now = Date.now();
                 succeeded = true;
-
-                // Re-initialize swipe handlers after DOM update
-                this.$nextTick(() => this.initSwipeHandlers());
             } catch (err) {
                 console.error('Error loading event:', err);
                 if (!silent) {
                     this.error = true;
-                    this.errorMessage = err.message;
                 }
             } finally {
                 this.inFlight = false;
@@ -275,21 +210,45 @@ function eventApp() {
             }
         },
 
-        formatDate(dateString) {
-            if (!dateString) return '';
+        // The day badge on the next event, from the same rules as the app.
+        get badge() {
+            if (!this.event) return '';
+            const label = GnwModel.relativeDayLabel(this.event, new Date(this.now));
+            switch (label.kind) {
+                case 'now': return this.t('badgeNow');
+                case 'today': return this.t('badgeToday');
+                case 'tomorrow': return this.t('badgeTomorrow');
+                default: {
+                    // 7 January 2024 was a Sunday, so day 0 of getDay() is that date.
+                    const name = new Date(2024, 0, 7 + label.weekday)
+                        .toLocaleDateString(this.locale, { weekday: 'long' });
+                    return this.t('badgeInDays')
+                        .replace('{weekday}', name.charAt(0).toUpperCase() + name.slice(1))
+                        .replace('{n}', label.days);
+                }
+            }
+        },
 
-            const date = new Date(dateString);
-            const options = {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            };
+        // "sobota, 19 września" and "20:00 – 00:00": the two lines of the date row.
+        dayLine(dateString) {
+            return new Date(dateString)
+                .toLocaleDateString(this.locale, { weekday: 'long', day: 'numeric', month: 'long' });
+        },
 
-            const locale = this.currentLang + '-' + this.currentLang.toUpperCase();
-            return date.toLocaleDateString(locale, options);
+        timeRange(event) {
+            if (!event) return '';
+            const start = this.timeOfDay(event.start);
+            return event.end ? start + ' – ' + this.timeOfDay(event.end) : start;
+        },
+
+        // Venue on the first line, street and city on the second.
+        get where() {
+            const cityName = this.currentCity ? this.currentCity.name : '';
+            return GnwModel.splitLocation(this.event ? this.event.location : '', cityName);
+        },
+
+        placeOf(location) {
+            return GnwModel.splitLocation(location, '').place;
         },
 
         get locale() {
@@ -308,80 +267,6 @@ function eventApp() {
 
         timeOfDay(dateString) {
             return new Date(dateString).toLocaleTimeString(this.locale, { hour: '2-digit', minute: '2-digit' });
-        },
-
-        formatDescription(description) {
-            if (!description) return '';
-
-            // If description already contains HTML tags, return as-is
-            if (/<[a-z][\s\S]*>/i.test(description)) {
-                return description.replace(/\n/g, '<br>');
-            }
-
-            // Convert URLs to links (only for plain text)
-            const urlRegex = /(https?:\/\/[^\s]+)/g;
-            let formatted = description.replace(urlRegex, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-
-            // Convert newlines to <br>
-            formatted = formatted.replace(/\n/g, '<br>');
-
-            return formatted;
-        },
-
-        isEventOngoing() {
-            if (!this.event) return false;
-            const now = new Date(this.now);
-            const startDate = new Date(this.event.start);
-            const endDate = new Date(this.event.end);
-            return now >= startDate && now < endDate;
-        },
-
-        getTimeUntil() {
-            if (!this.event) return '';
-
-            const now = new Date(this.now);
-            const startDate = new Date(this.event.start);
-            const endDate = new Date(this.event.end);
-
-            // Event is currently happening
-            if (now >= startDate && now < endDate) {
-                return this.t('eventOngoing');
-            }
-
-            // Event hasn't started yet - show countdown to start
-            if (now < startDate) {
-                const diff = startDate - now;
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-                let result = [];
-                if (days > 0) result.push(`${days} ${this.t('days')}`);
-                if (hours > 0) result.push(`${hours} ${this.t('hours')}`);
-                if (minutes > 0 || result.length === 0) result.push(`${minutes} ${this.t('minutes')}`);
-
-                return result.join(', ');
-            }
-
-            // Event has ended
-            return this.t('eventEnded');
-        },
-
-        startCountdown() {
-            // Clear existing interval
-            if (this.countdownInterval) {
-                clearInterval(this.countdownInterval);
-            }
-
-            // Alpine re-runs an expression when a property it read changes, so
-            // moving `now` is what moves the countdown. The previous timer
-            // called $nextTick(), which returns a promise and changes no state,
-            // so the numbers only ever moved when a refresh replaced the
-            // events - and stood still whenever refreshes failed.
-            this.now = Date.now();
-            this.countdownInterval = setInterval(() => {
-                this.now = Date.now();
-            }, 30000);
         },
 
         addToCalendar() {

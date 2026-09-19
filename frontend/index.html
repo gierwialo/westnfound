@@ -9,7 +9,7 @@
     <meta name="description" content="Najbliższe imprezy i warsztaty West Coast Swing — data, miejsce i odliczanie do startu.">
     <title>Gdzie na Westa? - Najbliższe Wydarzenie</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.3/dist/cdn.min.js" integrity="sha384-/7syvHwR9PpZbxOwOnlTTl4DepN0R0q9aiGAu+D0AcTtZXmrNw0zgp+TzUlPgDx2" crossorigin="anonymous"></script>
-    <link rel="stylesheet" href="styles.css?v=8272f8b0">
+    <link rel="stylesheet" href="styles.css?v=c3a5731a">
     <!-- slot:head-end -->
 </head>
 <body class="site">
@@ -89,14 +89,15 @@
         <!-- The next event, and the two after it -->
         <main class="cols" x-show="showEvents" x-cloak>
             <article class="card hero">
+                <div class="hero-top"><span class="badge" x-text="badge"></span></div>
                 <h2 x-text="event?.title"></h2>
                 <div class="info">
                     <div class="ic"><svg class="i"><use href="#i-clock"/></svg></div>
-                    <div><b x-text="formatDate(event?.start)"></b></div>
+                    <div><b x-text="dayLine(event?.start)"></b><span x-text="timeRange(event)"></span></div>
                 </div>
                 <div class="info" x-show="event?.location">
                     <div class="ic"><svg class="i"><use href="#i-pin"/></svg></div>
-                    <div><b x-text="event?.location"></b></div>
+                    <div><b x-text="where.place"></b><span x-show="where.streetWithCity" x-text="where.streetWithCity"></span></div>
                 </div>
                 <button type="button" class="btn primary" @click="addToCalendar()"><svg class="i"><use href="#i-calplus"/></svg><span x-text="t('actionCalendar')"></span></button>
                 <div class="actions" x-show="event?.location">
@@ -109,7 +110,7 @@
                 <template x-for="next in events.slice(1)" :key="next.start + next.title">
                     <article class="card mini">
                         <div class="tile"><small x-text="shortWeekday(next.start)"></small><strong x-text="dayOfMonth(next.start)"></strong></div>
-                        <div class="tt"><b x-text="next.title"></b><span x-text="[timeOfDay(next.start), next.location].filter(Boolean).join(' · ')"></span></div>
+                        <div class="tt"><b x-text="next.title"></b><span x-text="[timeOfDay(next.start), placeOf(next.location)].filter(Boolean).join(' · ')"></span></div>
                     </article>
                 </template>
                 <a class="see-all" :href="'/' + t('calendarPath')"><span x-text="t('fullCalendar')"></span><svg class="i"><use href="#i-chev-r"/></svg></a>
@@ -140,8 +141,9 @@
         </footer>
     </div>
 
-    <script src="translations.js?v=2879747f"></script>
-    <script src="app.js?v=0787ab6a"></script>
+    <script src="translations.js?v=ff5b1c6e"></script>
+    <script src="model.js?v=8c3f1b49"></script>
+    <script src="app.js?v=2f1f4bd9"></script>
 <!-- slot:body-end -->
 </body>
 </html>

@@ -266,6 +266,25 @@ svg.i {
     padding: 18px 18px 16px;
 }
 
+.hero-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 10px;
+    border-radius: 13px;
+    background: var(--badge-bg);
+    color: var(--badge-fg);
+    font-size: 13px;
+    font-weight: 700;
+}
+
 .hero h2 {
     font-size: 25px;
     line-height: 30px;
