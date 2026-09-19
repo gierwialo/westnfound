@@ -110,6 +110,13 @@ be exercised locally without touching `/etc/hosts` — see
 docker exec -it westnfound_backend_prod python manage.py test events
 ```
 
+The pure frontend functions in `frontend/model.js` have their own tests. They
+need Node 22 or newer and no packages:
+
+```bash
+node --test 'tests/**/*.test.js'
+```
+
 ## Documentation
 
 - [docs/deployment.md](docs/deployment.md) — profiles, configuration, deploying an update, troubleshooting
