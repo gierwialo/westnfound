@@ -7,10 +7,12 @@
          app.js rewrites it per city and per language once loaded. -->
     <meta name="description" content="Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, do subskrybowania w telefonie.">
     <title>Gdzie na Westa? - Kalendarz</title>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link rel="stylesheet" href="styles.css?v=9db47249">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.3/dist/cdn.min.js" integrity="sha384-/7syvHwR9PpZbxOwOnlTTl4DepN0R0q9aiGAu+D0AcTtZXmrNw0zgp+TzUlPgDx2" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="styles.css?v=8272f8b0">
+    <!-- slot:head-end -->
 </head>
-<body>
+<body class="legacy">
+<!-- slot:body-start -->
     <div class="container container-wide" x-data="calendarPage()" x-init="init()">
         <!-- Header -->
         <header class="header">
@@ -93,7 +95,8 @@
         </footer>
     </div>
 
-    <script src="translations.js?v=8fa20a6d"></script>
-    <script src="calendar.js?v=82478e37"></script>
+    <script src="translations.js?v=2879747f"></script>
+    <script src="calendar.js?v=27318f3a"></script>
+<!-- slot:body-end -->
 </body>
 </html>

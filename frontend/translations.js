@@ -11,6 +11,21 @@ const translations = {
         metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
         metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
 
+        // Home page
+        upcoming: "Najbliższe",
+        later: "Potem",
+        fullCalendar: "Pełny kalendarz",
+        actionCalendar: "Do kalendarza",
+        actionDirections: "Trasa",
+        unknownCityHeading: "Gdzie to?",
+        loadFailed: "Nie udało się pobrać wydarzeń.",
+        errorHint: "Sprawdź połączenie z internetem.",
+        emptyTitle: "Na razie cisza",
+        emptyBody: "W tym mieście nie ma teraz zaplanowanych wydarzeń. Zajrzyj później albo sprawdź inne miasta.",
+        refresh: "Odśwież",
+        keeperPrompt: "Prowadzisz kalendarz tego miasta?",
+        keeperLink: "Zobacz, jak dodawać wydarzenia",
+
         // Loading & Error states
         loading: "Ładowanie wydarzenia...",
         errorTitle: "Ups! Coś poszło nie tak",
@@ -83,6 +98,21 @@ const translations = {
         metaDescriptionCity: "Upcoming West Coast Swing parties and workshops in {city} - date, venue and a countdown to the start.",
         metaDescriptionCalendar: "West Coast Swing event calendar - every party and workshop, ready to subscribe to on your phone.",
         metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and workshop, ready to subscribe to on your phone.",
+
+        // Home page
+        upcoming: "Upcoming",
+        later: "Coming up",
+        fullCalendar: "Full calendar",
+        actionCalendar: "Add to calendar",
+        actionDirections: "Directions",
+        unknownCityHeading: "Where's that?",
+        loadFailed: "Couldn't load events.",
+        errorHint: "Check your internet connection.",
+        emptyTitle: "All quiet for now",
+        emptyBody: "There are no upcoming events in this city right now. Check back later or try another city.",
+        refresh: "Refresh",
+        keeperPrompt: "Run this city's calendar?",
+        keeperLink: "See how to add events",
 
         // Loading & Error states
         loading: "Loading event...",

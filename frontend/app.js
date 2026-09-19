@@ -38,6 +38,14 @@ function eventApp() {
             return this.cities.length > 1 ? this.currentCity : null;
         },
 
+        get showEvents() {
+            return !this.loading && !this.error && !this.unknownCity && this.events.length > 0;
+        },
+
+        get showEmpty() {
+            return !this.loading && !this.error && !this.unknownCity && this.events.length === 0;
+        },
+
         init() {
             this.initLanguage();
             this.updateDescription();
@@ -282,6 +290,24 @@ function eventApp() {
 
             const locale = this.currentLang + '-' + this.currentLang.toUpperCase();
             return date.toLocaleDateString(locale, options);
+        },
+
+        get locale() {
+            return this.currentLang + '-' + this.currentLang.toUpperCase();
+        },
+
+        // The pieces of a "Potem" row: weekday and day of the month for the
+        // tile, and the start time for the second line.
+        shortWeekday(dateString) {
+            return new Date(dateString).toLocaleDateString(this.locale, { weekday: 'short' });
+        },
+
+        dayOfMonth(dateString) {
+            return new Date(dateString).getDate();
+        },
+
+        timeOfDay(dateString) {
+            return new Date(dateString).toLocaleTimeString(this.locale, { hour: '2-digit', minute: '2-digit' });
         },
 
         formatDescription(description) {
