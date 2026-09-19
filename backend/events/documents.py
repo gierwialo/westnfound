@@ -24,11 +24,9 @@ from django.conf import settings
 from .middleware import canonical_host, scheme_for
 from .models import City
 
-# Przekierowanie CZASOWE, nie trwałe, i to jest decyzja, nie przeoczenie.
-# Właściciel przewiduje, że pod apeksem może kiedyś stanąć co innego niż
-# miasto domyślne; wtedy `warszawa.` musi znów pokazywać Warszawę. Trwałe
-# przekierowanie siedzi w pamięci przeglądarek miesiącami i takiego powrotu
-# nie da się ogłosić. Zmiana na 301 to podmiana tej jednej liczby.
+# A TEMPORARY redirect, not a permanent one, and that is a decision, not an
+# oversight: a permanent redirect sits in browsers' memory for months and
+# cannot be taken back. Switching to 301 means changing this one number.
 REDIRECT_STATUS = 302
 
 FRONTEND_DIR = Path(os.environ.get('FRONTEND_DIR', '/frontend'))

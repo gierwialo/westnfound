@@ -99,9 +99,10 @@ def canonical_host(raw_host: str, city, base_domains):
     if not city.is_default:
         return None
     return None if host == base else base
-# Hosty, na ktorych https nie jest tym, czego uzywa odwiedzajacy. Cala reszta
-# jest publiczna i stoi za Cloudflare, ktory konczy TLS - a origin nie ma jak
-# tego stwierdzic, bo warstwa edge nadpisuje X-Forwarded-Proto wlasnym schematem.
+# Hosts where https is not what the visitor uses. Everything else is public
+# and sits behind Cloudflare, which terminates TLS - and the origin has no way
+# to tell, because the edge layer overwrites X-Forwarded-Proto with its own
+# scheme.
 LOCAL_HOSTS = ('localhost', '127.0.0.1', '::1', 'lvh.me')
 
 

@@ -18,12 +18,12 @@ function calendarPage() {
         isNarrow: false,
         FETCH_TIMEOUT_MS: 15 * 1000,
 
-        // Podawany przez /api/calendar/, bo tylko serwer wie, pod jakim adresem
-        // mieszka to miasto. Skladany tu wczesniej z location.origin wiazal
-        // kazdego, kto subskrybowal z apeksu, z gdzienawesta.com zamiast
-        // z Warszawa - a subskrypcje ustawia sie raz i nikt do niej nie wraca.
-        // Awaryjnie zostaje stary sposob: lepiej podac adres z tego hosta niz
-        // pusty, gdy zapytanie do API nie doszlo.
+        // Given by /api/calendar/, because only the server knows at which
+        // address this city lives. Built here from location.origin before, it
+        // tied everyone who subscribed from the apex to gdzienawesta.com
+        // instead of to Warsaw - and a subscription is set up once and nobody
+        // comes back to it. The old way stays as a fallback: better an address
+        // from this host than an empty one when the API request did not arrive.
         feedUrlFromApi: '',
 
         get feedUrl() {
