@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -686,6 +687,89 @@ class CanonicalHostTests(TestCase):
         body = self.client.get('/robots.txt',
                                HTTP_HOST='warszawa.gdzienawesta.com').content.decode()
         self.assertIn('Sitemap: https://gdzienawesta.com/sitemap.xml', body)
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
+class LinkPreviewTests(TestCase):
+    """What a chat window shows when someone pastes one of our addresses.
+
+    Until these tags existed the site had none at all, so a link shared to
+    Messenger - where roughly one visitor in five already comes from - was a
+    bare blue line. The point of building them here rather than injecting them
+    at the edge is the city: the edge does not know the cities, and teaching it
+    would undo the rule that a new city is an entry in the admin panel.
+    """
+
+    def setUp(self):
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+
+        import tempfile
+        from events import documents
+        self.dir = Path(tempfile.mkdtemp())
+        page = ('<html lang="pl"><head>'
+                '<meta name="description" content="x"><title>x</title>'
+                '</head><body></body></html>')
+        (self.dir / 'index.html').write_text(page, encoding='utf-8')
+        (self.dir / 'calendar.html').write_text(page, encoding='utf-8')
+        self._old = documents.FRONTEND_DIR
+        documents.FRONTEND_DIR = self.dir
+        documents._cache.clear()
+        self.addCleanup(self._restore)
+
+    def _restore(self):
+        from events import documents
+        documents.FRONTEND_DIR = self._old
+        documents._cache.clear()
+
+    def _meta(self, body, prop, attr='property'):
+        found = re.search(rf'<meta {attr}="{prop}" content="([^"]*)"', body)
+        self.assertIsNotNone(found, f'no {prop}')
+        return found.group(1)
+
+    def _body(self, host, path='/'):
+        return self.client.get(path, HTTP_HOST=host).content.decode()
+
+    def test_a_city_link_previews_with_that_citys_name(self):
+        body = self._body('lodz.gdzienawesta.com')
+        self.assertIn('Łódź', self._meta(body, 'og:title'))
+        self.assertIn('Łódź', self._meta(body, 'og:description'))
+
+    def test_the_preview_title_matches_the_page_title(self):
+        # Two sources for one sentence is how they drift apart.
+        for host in ('gdzienawesta.com', 'lodz.gdzienawesta.com'):
+            body = self._body(host)
+            title = re.search(r'<title>(.*?)</title>', body).group(1)
+            description = self._meta(body, 'description', attr='name')
+            self.assertEqual(self._meta(body, 'og:title'), title, host)
+            self.assertEqual(self._meta(body, 'og:description'), description, host)
+
+    def test_the_preview_address_is_the_canonical_one(self):
+        body = self._body('lodz.gdzienawesta.com', '/calendar/')
+        self.assertEqual(self._meta(body, 'og:url'),
+                         'https://lodz.gdzienawesta.com/kalendarz')
+
+    def test_the_image_is_absolute_because_it_lives_on_the_other_host(self):
+        body = self._body('gdzienawesta.com')
+        image = self._meta(body, 'og:image')
+        self.assertEqual(image, 'https://app.gdzienawesta.com/og-image.png')
+        self.assertEqual(self._meta(body, 'twitter:image', attr='name'), image)
+        self.assertEqual(self._meta(body, 'og:image:width'), '1200')
+        self.assertEqual(self._meta(body, 'og:image:height'), '630')
+        self.assertEqual(self._meta(body, 'twitter:card', attr='name'),
+                         'summary_large_image')
+
+    def test_a_host_naming_no_city_gets_no_preview_at_all(self):
+        # It is an apology with a list of cities. There is nothing to preview
+        # and no honest address to point at - the same reason it is noindex.
+        body = self._body('gdansk.gdzienawesta.com')
+        self.assertNotIn('og:', body)
+        self.assertNotIn('twitter:', body)
+
+    def test_the_calendar_page_previews_as_the_calendar(self):
+        body = self._body('lodz.gdzienawesta.com', '/kalendarz')
+        self.assertIn('Kalendarz', self._meta(body, 'og:title'))
 
 
 @override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])

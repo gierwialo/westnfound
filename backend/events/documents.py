@@ -55,6 +55,13 @@ DESCRIPTION_CALENDAR_CITY = (
     'imprez i warsztatów, do subskrybowania w telefonie.'
 )
 
+# The link preview image lives with the static pages on app.gdzienawesta.com,
+# which is where the generator that produces it deploys to. Referenced without
+# the ?v= stamp those pages carry: this file cannot know the stamp, and every
+# preview consumer caches by URL anyway, so the stamp would buy nothing here.
+OG_IMAGE = 'https://app.gdzienawesta.com/og-image.png'
+OG_IMAGE_ALT = 'Gdzie Na Westa? — Wydarzenia West Coast Swing w Polsce'
+
 TITLE_TAG = re.compile(r'<title>.*?</title>', re.S)
 DESCRIPTION_TAG = re.compile(r'<meta name="description" content="[^"]*">')
 HEAD_END = '</head>'
@@ -139,8 +146,31 @@ class DocumentView(View):
             tag = '<meta name="robots" content="noindex">'
         else:
             host = request.get_host()
-            tag = (f'<link rel="canonical" href="{scheme_for(host)}://'
-                   f'{host}{self.canonical_path}">')
+            url = f'{scheme_for(host)}://{host}{self.canonical_path}'
+            # The same tag set the static pages carry, so a link shared from
+            # either property previews the same way. Title and description are
+            # the ones computed above, which means a link to a city subdomain
+            # names that city - the whole reason these are built here and not
+            # injected by the edge, which does not know the cities and must not
+            # learn them: a new city is an entry in the admin panel, never a
+            # deployment.
+            tag = '\n    '.join([
+                f'<link rel="canonical" href="{url}">',
+                '<meta property="og:type" content="website">',
+                f'<meta property="og:site_name" content="{SITE_TITLE}">',
+                f'<meta property="og:title" content="{title}">',
+                f'<meta property="og:description" content="{description}">',
+                f'<meta property="og:url" content="{url}">',
+                f'<meta property="og:image" content="{OG_IMAGE}">',
+                '<meta property="og:image:type" content="image/png">',
+                '<meta property="og:image:width" content="1200">',
+                '<meta property="og:image:height" content="630">',
+                f'<meta property="og:image:alt" content="{OG_IMAGE_ALT}">',
+                '<meta property="og:locale" content="pl_PL">',
+                '<meta name="twitter:card" content="summary_large_image">',
+                f'<meta name="twitter:image" content="{OG_IMAGE}">',
+                f'<meta name="twitter:image:alt" content="{OG_IMAGE_ALT}">',
+            ])
         page = page.replace(HEAD_END, f'    {tag}\n{HEAD_END}', 1)
 
         return HttpResponse(page, content_type='text/html; charset=utf-8')
