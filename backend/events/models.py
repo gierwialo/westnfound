@@ -27,9 +27,14 @@ class City(models.Model):
         unique=True,
         help_text="Google Calendar ID (e.g. 'warsawwestiesdance@gmail.com')"
     )
+    # Filled in through the single "Coordinates" field in the admin panel
+    # (events/coordinates.py), never on their own: both or neither.
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
     is_default = models.BooleanField(
         default=False,
-        help_text="City shown on gdzienawesta.com itself. Exactly one city has this."
+        help_text="The city behind the addresses gdzienawesta.com had before the map: "
+                  "/kalendarz.ics, /kalendarz and the API. Exactly one city has this."
     )
     is_active = models.BooleanField(default=True, help_text="Whether the city is active")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -50,6 +55,9 @@ class City(models.Model):
                 'is_active': "The default city cannot be inactive - gdzienawesta.com "
                              "would have no events to show."
             })
+        # Half a point cannot be drawn; the map would have to guess.
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValidationError("Latitude and longitude go together: set both or neither.")
 
     def save(self, *args, **kwargs):
         if not self.slug:

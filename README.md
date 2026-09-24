@@ -63,6 +63,7 @@ Open the admin panel at `http://localhost/admin/` and add your first city:
 | **Name** | City name as displayed, diacritics and all |
 | **Slug** | Subdomain label, ASCII, used as `<slug>.example.com`. Filled in from the name; **changing it breaks every link already shared** |
 | **Calendar ID** | From Google Calendar → Settings → Integrate calendar |
+| **Coordinates** | Where the city sits on the map. Right-click it in Google Maps and click the numbers at the top of the menu, then paste: `50.0412, 21.9991`, latitude first. Optional; a city without them is listed without a dot |
 | **Is default** | The city served on the bare domain. Exactly one city has this |
 | **Is active** | Uncheck to hide a city without deleting it |
 

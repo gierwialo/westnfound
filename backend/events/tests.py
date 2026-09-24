@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
+from .coordinates import format_coordinates, parse_coordinates
 from .middleware import resolve_city
 from .models import City
 from .services import GoogleCalendarService
@@ -375,6 +376,97 @@ class CitiesEndpointTests(TestCase):
             [c['name'] for c in self.get()['cities']],
             ['Gdańsk', 'Łódź', 'Warszawa'],
         )
+
+
+class CoordinatesTests(TestCase):
+    """The one field the owner pastes a Google Maps location into."""
+
+    def test_the_format_google_maps_copies(self):
+        self.assertEqual(parse_coordinates('50.0412, 21.9991'), (50.0412, 21.9991))
+
+    def test_google_sometimes_copies_many_more_decimals(self):
+        self.assertEqual(
+            parse_coordinates('50.04123456789, 21.99912345678'),
+            (50.041235, 21.999123),
+        )
+
+    def test_spacing_is_forgiven(self):
+        self.assertEqual(parse_coordinates(' 50.0412,21.9991 '), (50.0412, 21.9991))
+        self.assertEqual(parse_coordinates('50.0412 21.9991'), (50.0412, 21.9991))
+
+    def test_empty_means_no_dot_on_the_map(self):
+        self.assertEqual(parse_coordinates(''), (None, None))
+        self.assertEqual(parse_coordinates('   '), (None, None))
+
+    def test_swapped_order_is_caught_with_a_hint(self):
+        with self.assertRaisesMessage(ValidationError, 'Are latitude and longitude swapped?'):
+            parse_coordinates('21.9991, 50.0412')
+
+    def test_somewhere_else_is_caught_without_the_hint(self):
+        with self.assertRaises(ValidationError) as caught:
+            parse_coordinates('40.4168, -3.7038')
+        self.assertIn('outside Poland', str(caught.exception))
+        self.assertNotIn('swapped', str(caught.exception))
+
+    def test_a_city_on_the_border_is_accepted(self):
+        for pair in ('52.3480, 14.5530', '49.7497, 18.6320', '49.7838, 22.7677'):
+            with self.subTest(pair=pair):
+                parse_coordinates(pair)
+
+    def test_something_that_is_not_a_pair(self):
+        for text in ('50.0412', 'Rzeszów', '50,0412, 21,9991'):
+            with self.subTest(text=text):
+                with self.assertRaisesMessage(ValidationError, 'not a pair'):
+                    parse_coordinates(text)
+
+    def test_a_saved_pair_reads_back_as_it_was_pasted(self):
+        latitude, longitude = parse_coordinates('50.041235, 21.999123')
+        self.assertEqual(format_coordinates(latitude, longitude), '50.041235, 21.999123')
+        self.assertEqual(format_coordinates(None, None), '')
+
+    def test_half_a_pair_is_refused_by_the_model(self):
+        city = City(name='Rzeszów', calendar_id='r@example.com', latitude=50.0412)
+        with self.assertRaises(ValidationError):
+            city.full_clean()
+
+
+class CityAdminFormTests(TestCase):
+    def form(self, coordinates, instance=None):
+        from .admin import CityForm
+
+        return CityForm(data={
+            'name': 'Rzeszów', 'slug': 'rzeszow', 'calendar_id': 'r@example.com',
+            'coordinates': coordinates, 'is_active': 'on',
+        }, instance=instance)
+
+    def test_pasted_coordinates_are_saved_into_both_columns(self):
+        form = self.form('50.0412, 21.9991')
+        self.assertTrue(form.is_valid(), form.errors)
+        city = form.save()
+        self.assertEqual((city.latitude, city.longitude), (50.0412, 21.9991))
+
+    def test_the_error_is_shown_on_the_field(self):
+        form = self.form('21.9991, 50.0412')
+        self.assertFalse(form.is_valid())
+        self.assertIn('swapped', form.errors['coordinates'][0])
+
+    def test_clearing_the_field_takes_the_city_off_the_map(self):
+        city = City.objects.create(
+            name='Rzeszów', slug='rzeszow', calendar_id='r@example.com',
+            latitude=50.0412, longitude=21.9991,
+        )
+        form = self.form('', instance=city)
+        self.assertTrue(form.is_valid(), form.errors)
+        city = form.save()
+        self.assertEqual((city.latitude, city.longitude), (None, None))
+
+    def test_an_existing_city_shows_its_coordinates(self):
+        from .admin import CityForm
+
+        city = City.objects.create(
+            name='Rzeszów', calendar_id='r@example.com', latitude=50.0412, longitude=21.9991,
+        )
+        self.assertEqual(CityForm(instance=city).initial['coordinates'], '50.0412, 21.9991')
 
 
 @override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
