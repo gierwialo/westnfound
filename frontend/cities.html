@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <!-- Baseline only: Django writes the description with the number of
+         cities in it, and the title, before this page leaves the server. -->
+    <meta name="description" content="Imprezy i praktisy West Coast Swing w Polsce — kiedy, gdzie i ile zostało do startu.">
+    <title>Gdzie na Westa?</title>
+    <link rel="stylesheet" href="styles.css?v=95f7e879">
+    <!-- slot:head-end -->
+</head>
+<body class="site">
+<!-- slot:body-start -->
+    <main class="hub">
+        <h1>Gdzie tańczysz westa?</h1>
+        <!-- The index of the site: written in by the server, one link per
+             city, so it is there for a reader and a crawler without any
+             JavaScript. The map only draws what this list already says. -->
+        <ul class="hub-list">
+<!-- cities:list -->
+        </ul>
+    </main>
+<!-- slot:body-end -->
+</body>
+</html>

@@ -8,6 +8,8 @@ const translations = {
         metaDescriptionCity: "Najbliższe imprezy i praktisy West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
         metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
         metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
+        // The map of cities on gdzienawesta.com; {count} is how many there are.
+        metaDescriptionHub: "Imprezy i praktisy West Coast Swing w {count} miastach w Polsce — kiedy, gdzie i ile zostało do startu.",
 
         // Home page
         upcoming: "Najbliższe",
@@ -96,6 +98,7 @@ const translations = {
         metaDescriptionCity: "Upcoming West Coast Swing parties and practices in {city} - date, venue and a countdown to the start.",
         metaDescriptionCalendar: "West Coast Swing event calendar - every party and practice, ready to subscribe to on your phone.",
         metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and practice, ready to subscribe to on your phone.",
+        metaDescriptionHub: "West Coast Swing parties and practices in {count} cities in Poland - when, where and how long until it starts.",
 
         // Home page
         upcoming: "Upcoming",

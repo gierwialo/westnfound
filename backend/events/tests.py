@@ -600,12 +600,25 @@ class SitemapTests(TestCase):
         import re
         return re.findall(r'<loc>([^<]+)</loc>', response.content.decode())
 
-    def test_apex_lists_every_city_because_nothing_else_links_them(self):
-        urls = self._urls('gdzienawesta.com')
-        self.assertIn('https://gdzienawesta.com/', urls)
-        self.assertIn('https://gdzienawesta.com/kalendarz', urls)
-        self.assertIn('https://lodz.gdzienawesta.com/', urls)
-        self.assertIn('https://krakow.gdzienawesta.com/', urls)
+    def test_apex_lists_the_map_and_every_city(self):
+        self.assertEqual(self._urls('gdzienawesta.com'), [
+            'https://gdzienawesta.com/',
+            'https://krakow.gdzienawesta.com/',
+            'https://lodz.gdzienawesta.com/',
+            'https://warszawa.gdzienawesta.com/',
+        ])
+
+    def test_the_default_city_has_a_sitemap_of_its_own(self):
+        """It used to be folded into the apex's; now it lives on its subdomain."""
+        self.assertEqual(self._urls('warszawa.gdzienawesta.com'), [
+            'https://warszawa.gdzienawesta.com/',
+            'https://warszawa.gdzienawesta.com/kalendarz',
+        ])
+
+    def test_www_defers_to_the_apex(self):
+        response = self.client.get('/sitemap.xml', HTTP_HOST='www.gdzienawesta.com')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], 'https://gdzienawesta.com/sitemap.xml')
 
     def test_a_city_lists_only_its_own_addresses(self):
         urls = self._urls('lodz.gdzienawesta.com')
@@ -613,8 +626,8 @@ class SitemapTests(TestCase):
                                 'https://lodz.gdzienawesta.com/kalendarz'])
 
     def test_the_english_spelling_is_left_out_as_a_duplicate(self):
-        self.assertNotIn('https://gdzienawesta.com/calendar',
-                         self._urls('gdzienawesta.com'))
+        self.assertNotIn('https://lodz.gdzienawesta.com/calendar',
+                         self._urls('lodz.gdzienawesta.com'))
 
     def test_inactive_cities_are_not_offered_to_crawlers(self):
         City.objects.filter(slug='krakow').update(is_active=False)
@@ -645,6 +658,9 @@ class DocumentTests(TestCase):
         self.dir = Path(tempfile.mkdtemp())
         (self.dir / 'index.html').write_text(self.PAGE, encoding='utf-8')
         (self.dir / 'calendar.html').write_text(self.PAGE, encoding='utf-8')
+        (self.dir / 'cities.html').write_text(
+            self.PAGE.replace('<body>', '<body><ul>\n<!-- cities:list -->\n</ul>'),
+            encoding='utf-8')
         self._old_dir = documents.FRONTEND_DIR
         documents.FRONTEND_DIR = self.dir
         documents._cache.clear()
@@ -669,26 +685,26 @@ class DocumentTests(TestCase):
                 body)
 
     def test_each_city_gets_its_own_title(self):
-        apex, _, _ = self._head('/', 'gdzienawesta.com')
+        warsaw, _, _ = self._head('/', 'warszawa.gdzienawesta.com')
         lodz, _, _ = self._head('/', 'lodz.gdzienawesta.com')
-        self.assertEqual(apex, 'Gdzie na Westa? - Warszawa')
+        self.assertEqual(warsaw, 'Gdzie na Westa? - Warszawa')
         self.assertEqual(lodz, 'Gdzie na Westa? - Łódź')
 
     def test_each_city_gets_its_own_description(self):
-        _, apex, _ = self._head('/', 'gdzienawesta.com')
+        _, warsaw, _ = self._head('/', 'warszawa.gdzienawesta.com')
         _, lodz, _ = self._head('/', 'lodz.gdzienawesta.com')
-        self.assertIn('Warszawa', apex)
+        self.assertIn('Warszawa', warsaw)
         self.assertIn('Łódź', lodz)
-        self.assertNotEqual(apex, lodz)
+        self.assertNotEqual(warsaw, lodz)
 
     def test_the_cities_no_longer_serve_an_identical_document(self):
         # The whole point: three hosts used to answer byte for byte the same.
-        _, _, apex = self._head('/', 'gdzienawesta.com')
+        _, _, warsaw = self._head('/', 'warszawa.gdzienawesta.com')
         _, _, lodz = self._head('/', 'lodz.gdzienawesta.com')
-        self.assertNotEqual(apex, lodz)
+        self.assertNotEqual(warsaw, lodz)
 
     def test_no_description_promises_workshops(self):
-        """The calendars are asked not to carry them."""
+        """The calendars are asked not to carry them (M8)."""
         for path, host in (('/', 'gdzienawesta.com'), ('/', 'lodz.gdzienawesta.com'),
                            ('/kalendarz', 'lodz.gdzienawesta.com')):
             _, description, _ = self._head(path, host)
@@ -696,7 +712,7 @@ class DocumentTests(TestCase):
 
     def test_a_single_city_is_not_named(self):
         City.objects.filter(slug='lodz').delete()
-        title, description, _ = self._head('/', 'gdzienawesta.com')
+        title, description, _ = self._head('/', 'warszawa.gdzienawesta.com')
         self.assertEqual(title, 'Gdzie na Westa?')
         self.assertNotIn('w mieście', description)
 
@@ -707,30 +723,131 @@ class DocumentTests(TestCase):
 
     def test_every_spelling_of_the_calendar_page_answers(self):
         for path in ('/kalendarz', '/kalendarz/', '/calendar', '/calendar/'):
-            self.assertEqual(self.client.get(path, HTTP_HOST='gdzienawesta.com')
+            self.assertEqual(self.client.get(path, HTTP_HOST='lodz.gdzienawesta.com')
                              .status_code, 200, path)
 
     def test_everything_else_in_the_page_is_handed_over_untouched(self):
         # Analytics and the ?v= stamps are written into these files after
         # deployment. Losing them here would be silent.
-        _, _, body = self._head('/', 'gdzienawesta.com')
-        self.assertIn('app.js?v=abc', body)
-        self.assertIn('G-FJYJF645WS', body)
-        self.assertIn('<html lang="pl">', body)
+        for host in ('gdzienawesta.com', 'lodz.gdzienawesta.com'):
+            _, _, body = self._head('/', host)
+            self.assertIn('app.js?v=abc', body, host)
+            self.assertIn('G-FJYJF645WS', body, host)
+            self.assertIn('<html lang="pl">', body, host)
 
     def test_a_redeployed_page_is_picked_up(self):
-        self._head('/', 'gdzienawesta.com')
+        self._head('/', 'lodz.gdzienawesta.com')
         (self.dir / 'index.html').write_text(
             self.PAGE.replace('app.js?v=abc', 'app.js?v=zzz'), encoding='utf-8')
         import os
         os.utime(self.dir / 'index.html', ns=(0, 10 ** 18))
-        _, _, body = self._head('/', 'gdzienawesta.com')
+        _, _, body = self._head('/', 'lodz.gdzienawesta.com')
         self.assertIn('app.js?v=zzz', body)
 
     def test_an_unknown_city_still_gets_a_page(self):
         # The page itself explains it; answering with nothing would be worse.
         title, _, _ = self._head('/', 'gdansk.gdzienawesta.com')
         self.assertEqual(title, 'Gdzie na Westa?')
+
+
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com', 'lvh.me'])
+class HubTests(TestCase):
+    """gdzienawesta.com itself: the map of cities, no longer Warsaw."""
+
+    PAGE = ('<!DOCTYPE html>\n<html lang="pl">\n<head>\n'
+            '<meta name="description" content="wyjściowy opis">\n'
+            '<title>Wyjściowy tytuł</title>\n</head>\n'
+            '<body><ul>\n<!-- cities:list -->\n</ul></body>\n</html>\n')
+
+    def setUp(self):
+        import tempfile
+        from events import documents
+
+        self.dir = Path(tempfile.mkdtemp())
+        (self.dir / 'cities.html').write_text(self.PAGE, encoding='utf-8')
+        (self.dir / 'index.html').write_text('<title>city page</title>', encoding='utf-8')
+        self._old_dir = documents.FRONTEND_DIR
+        documents.FRONTEND_DIR = self.dir
+        documents._cache.clear()
+        self.addCleanup(self._restore)
+
+        City.objects.create(name='Warszawa', slug='warszawa',
+                            calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', slug='lodz', calendar_id='l@example.com')
+
+    def _restore(self):
+        from events import documents
+        documents.FRONTEND_DIR = self._old_dir
+        documents._cache.clear()
+
+    def _page(self, host='gdzienawesta.com', path='/'):
+        response = self.client.get(path, HTTP_HOST=host)
+        self.assertEqual(response.status_code, 200)
+        return response.content.decode()
+
+    def _links(self, body):
+        return re.findall(r'<li><a href="([^"]+)">([^<]+)</a></li>', body)
+
+    def test_the_apex_is_the_map_not_warsaw(self):
+        body = self._page()
+        self.assertIn('<title>Gdzie na Westa?</title>', body)
+        self.assertNotIn('city page', body)
+
+    def test_every_city_is_linked_without_javascript(self):
+        """Warsaw too: it is one of the cities now, on its own subdomain."""
+        self.assertEqual(self._links(self._page()), [
+            ('https://lodz.gdzienawesta.com/', 'Łódź'),
+            ('https://warszawa.gdzienawesta.com/', 'Warszawa'),
+        ])
+
+    def test_inactive_cities_are_not_listed(self):
+        City.objects.filter(slug='lodz').update(is_active=False)
+        self.assertEqual([name for _, name in self._links(self._page())], ['Warszawa'])
+
+    def test_a_city_name_is_escaped(self):
+        City.objects.create(name='A & <B>', slug='ab', calendar_id='ab@example.com')
+        self.assertIn('>A &amp; &lt;B&gt;</a>', self._page())
+
+    def test_the_description_counts_the_cities(self):
+        """A new city in the admin panel reaches search results by itself."""
+        body = self._page()
+        self.assertIn('w 2 miastach w Polsce', body)
+        City.objects.create(name='Kraków', slug='krakow', calendar_id='k@example.com')
+        self.assertIn('w 3 miastach w Polsce', self._page())
+
+    def test_one_city_is_not_counted(self):
+        City.objects.filter(slug='lodz').delete()
+        self.assertNotIn('miastach', self._page())
+
+    def test_no_cities_at_all_is_still_a_page(self):
+        City.objects.all().delete()
+        self.assertEqual(self._links(self._page()), [])
+
+    def test_the_file_name_spelling_is_the_map_too(self):
+        self.assertEqual(self._links(self._page(path='/index.html')),
+                         self._links(self._page()))
+
+    def test_www_is_sent_to_the_apex(self):
+        response = self.client.get('/', HTTP_HOST='www.gdzienawesta.com')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], 'https://gdzienawesta.com/')
+
+    def test_it_points_at_itself_and_previews_as_the_map(self):
+        body = self._page()
+        self.assertIn('<link rel="canonical" href="https://gdzienawesta.com/">', body)
+        self.assertIn('<meta property="og:url" content="https://gdzienawesta.com/">', body)
+        self.assertIn('w 2 miastach', re.search(
+            r'<meta property="og:description" content="([^"]*)"', body).group(1))
+        self.assertNotIn('noindex', body)
+
+    def test_local_work_links_to_local_cities(self):
+        self.assertEqual(self._links(self._page(host='lvh.me'))[0],
+                         ('http://lodz.lvh.me/', 'Łódź'))
+
+    def test_the_api_on_the_apex_still_answers_as_the_default_city(self):
+        """Old versions of the app and existing subscribers rely on it."""
+        data = self.client.get('/api/calendar/', HTTP_HOST='gdzienawesta.com').json()
+        self.assertEqual(data['city']['slug'], 'warszawa')
 
 
 class TranslationParityTests(TestCase):
@@ -760,6 +877,7 @@ class TranslationParityTests(TestCase):
             ('metaDescriptionCalendar', documents.DESCRIPTION_CALENDAR),
             ('metaDescriptionCalendarCity',
              documents.DESCRIPTION_CALENDAR_CITY.format(city='{city}')),
+            ('metaDescriptionHub', documents.DESCRIPTION_HUB.format(count='{count}')),
         ):
             import re
             found = re.search(rf'^        {key}: "(.*?)",$', source, re.M)
@@ -769,7 +887,7 @@ class TranslationParityTests(TestCase):
 
 @override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
 class CanonicalHostTests(TestCase):
-    """The default city has two addresses; only one of them is published."""
+    """Every city lives on its own subdomain; the apex is the map."""
 
     def setUp(self):
         City.objects.create(name='Warszawa', slug='warszawa',
@@ -784,6 +902,7 @@ class CanonicalHostTests(TestCase):
                 '</head><body></body></html>')
         (self.dir / 'index.html').write_text(page, encoding='utf-8')
         (self.dir / 'calendar.html').write_text(page, encoding='utf-8')
+        (self.dir / 'cities.html').write_text(page, encoding='utf-8')
         self._old = documents.FRONTEND_DIR
         documents.FRONTEND_DIR = self.dir
         documents._cache.clear()
@@ -802,8 +921,8 @@ class CanonicalHostTests(TestCase):
         return found.group(1)
 
     def test_each_city_points_at_itself(self):
-        self.assertEqual(self._canonical('/', 'gdzienawesta.com'),
-                         'https://gdzienawesta.com/')
+        self.assertEqual(self._canonical('/', 'warszawa.gdzienawesta.com'),
+                         'https://warszawa.gdzienawesta.com/')
         self.assertEqual(self._canonical('/', 'lodz.gdzienawesta.com'),
                          'https://lodz.gdzienawesta.com/')
 
@@ -812,27 +931,31 @@ class CanonicalHostTests(TestCase):
             self.assertEqual(self._canonical(path, 'lodz.gdzienawesta.com'),
                              'https://lodz.gdzienawesta.com/kalendarz', path)
 
-    def test_the_default_citys_subdomain_sends_you_to_the_apex(self):
-        for path, target in (('/', 'https://gdzienawesta.com/'),
-                             ('/kalendarz', 'https://gdzienawesta.com/kalendarz'),
-                             ('/calendar/', 'https://gdzienawesta.com/kalendarz')):
-            response = self.client.get(path, HTTP_HOST='warszawa.gdzienawesta.com')
-            self.assertEqual(response.status_code, 302, path)
-            self.assertEqual(response['Location'], target, path)
+    def test_the_apex_hands_the_default_citys_calendar_to_its_subdomain(self):
+        """Bookmarks of gdzienawesta.com/kalendarz keep working."""
+        for host in ('gdzienawesta.com', 'www.gdzienawesta.com'):
+            for path in ('/kalendarz', '/kalendarz/', '/calendar', '/calendar/'):
+                response = self.client.get(path, HTTP_HOST=host)
+                self.assertEqual(response.status_code, 302, host + path)
+                self.assertEqual(response['Location'],
+                                 'https://warszawa.gdzienawesta.com/kalendarz', host + path)
 
-    def test_www_is_the_same_case(self):
+    def test_www_is_the_apex_under_another_name(self):
         response = self.client.get('/', HTTP_HOST='www.gdzienawesta.com')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response['Location'], 'https://gdzienawesta.com/')
 
     def test_the_redirect_is_temporary_because_the_apex_may_change_meaning(self):
         # 301 would sit in browser caches for months and outlive the decision.
-        response = self.client.get('/', HTTP_HOST='warszawa.gdzienawesta.com')
+        # The apex has just changed meaning once; that is the case in point.
+        response = self.client.get('/kalendarz', HTTP_HOST='gdzienawesta.com')
         self.assertEqual(response.status_code, 302)
 
     def test_a_city_on_its_own_subdomain_is_not_redirected(self):
-        self.assertEqual(
-            self.client.get('/', HTTP_HOST='lodz.gdzienawesta.com').status_code, 200)
+        for host in ('lodz.gdzienawesta.com', 'warszawa.gdzienawesta.com'):
+            for path in ('/', '/kalendarz'):
+                self.assertEqual(
+                    self.client.get(path, HTTP_HOST=host).status_code, 200, host + path)
 
     def test_an_unknown_city_is_kept_out_of_the_index(self):
         body = self.client.get('/', HTTP_HOST='gdansk.gdzienawesta.com').content.decode()
@@ -841,7 +964,8 @@ class CanonicalHostTests(TestCase):
         self.assertNotIn('rel="canonical"', body)
 
     def test_a_real_city_is_not_marked_noindex(self):
-        for host in ('gdzienawesta.com', 'lodz.gdzienawesta.com'):
+        for host in ('gdzienawesta.com', 'warszawa.gdzienawesta.com',
+                     'lodz.gdzienawesta.com'):
             body = self.client.get('/', HTTP_HOST=host).content.decode()
             self.assertNotIn('noindex', body, host)
 
@@ -858,15 +982,15 @@ class CanonicalHostTests(TestCase):
         self.assertEqual(
             self.client.get('/', HTTP_HOST='gdzienawesta.com').status_code, 200)
 
-    def test_the_sitemap_of_the_second_address_defers_to_the_first(self):
-        response = self.client.get('/sitemap.xml', HTTP_HOST='warszawa.gdzienawesta.com')
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], 'https://gdzienawesta.com/sitemap.xml')
+    def test_robots_on_www_names_the_apex(self):
+        body = self.client.get('/robots.txt',
+                               HTTP_HOST='www.gdzienawesta.com').content.decode()
+        self.assertIn('Sitemap: https://gdzienawesta.com/sitemap.xml', body)
 
-    def test_robots_on_the_second_address_names_the_first(self):
+    def test_robots_on_the_default_citys_subdomain_names_its_own(self):
         body = self.client.get('/robots.txt',
                                HTTP_HOST='warszawa.gdzienawesta.com').content.decode()
-        self.assertIn('Sitemap: https://gdzienawesta.com/sitemap.xml', body)
+        self.assertIn('Sitemap: https://warszawa.gdzienawesta.com/sitemap.xml', body)
 
 
 @override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com'])
@@ -893,6 +1017,7 @@ class LinkPreviewTests(TestCase):
                 '</head><body></body></html>')
         (self.dir / 'index.html').write_text(page, encoding='utf-8')
         (self.dir / 'calendar.html').write_text(page, encoding='utf-8')
+        (self.dir / 'cities.html').write_text(page, encoding='utf-8')
         self._old = documents.FRONTEND_DIR
         documents.FRONTEND_DIR = self.dir
         documents._cache.clear()

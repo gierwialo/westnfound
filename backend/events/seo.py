@@ -16,17 +16,13 @@ from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from django.views import View
 from xml.sax.saxutils import escape
 
-from .middleware import base_domain_for, canonical_host, scheme_for
+from .middleware import _hostname, canonical_host, hub_host, scheme_for
 from .models import City
 
 # Addresses worth offering to a crawler, in the site's own language. The page
 # answers to /calendar as well, but the two spellings are one page, so listing
 # both would be asking Google to pick a favourite between duplicates.
 CITY_PATHS = ['/', '/kalendarz']
-
-def _host_of(city: City, base: str) -> str:
-    """The address a city answers on: the apex for the default, else its own."""
-    return base if city.is_default else f'{city.slug}.{base}'
 
 
 class RobotsView(View):
@@ -39,11 +35,15 @@ class RobotsView(View):
 
     def get(self, request):
         host = request.get_host()
-        # Point at the sitemap of the address this city actually keeps. The
-        # default city answers on its own subdomain too, and naming that copy
-        # here would advertise the duplicate we are trying to retire.
-        named = canonical_host(host, getattr(request, 'city', None),
-                               settings.CITY_BASE_DOMAINS) or host
+        # Point at the sitemap of the address this host's pages actually keep:
+        # the apex for the map, whether asked on the apex or on www, and the
+        # city's own subdomain for everything else.
+        named = (
+            hub_host(host, settings.CITY_BASE_DOMAINS)
+            or canonical_host(host, getattr(request, 'city', None),
+                              settings.CITY_BASE_DOMAINS)
+            or host
+        )
         lines = [
             'User-agent: *',
             'Allow: /',
@@ -70,29 +70,29 @@ class RobotsView(View):
 
 
 class SitemapView(View):
-    """The addresses of this host, plus every city when this is the apex.
+    """The addresses of this host; on the apex, the map and every city.
 
-    A sitemap normally covers one host. The apex lists the other cities on
-    purpose: their subdomains appear in no served HTML, so a crawler that
-    never runs our JavaScript has no other way to learn they exist. Google
-    accepts this from a domain property, which covers every subdomain at once.
+    A sitemap normally covers one host. The apex lists the cities on purpose:
+    it is the one address people and crawlers arrive at knowing nothing else.
+    Google accepts this from a domain property, which covers every subdomain
+    at once. Each city's own sitemap then lists that city's pages.
     """
 
     def get(self, request):
         host = request.get_host()
         scheme = scheme_for(host)
-        base = (
-            base_domain_for(host, settings.CITY_BASE_DOMAINS)
-            or settings.CITY_BASE_DOMAINS[0]
-        )
         city = getattr(request, 'city', None)
 
-        # The default city keeps one sitemap, at the apex. Its subdomain
-        # answers with the same four addresses, and two sitemaps offering one
-        # set of pages is the duplicate said out loud.
-        elsewhere = canonical_host(host, city, settings.CITY_BASE_DOMAINS)
-        if elsewhere:
-            return HttpResponseRedirect(f'{scheme_for(elsewhere)}://{elsewhere}/sitemap.xml')
+        apex = hub_host(host, settings.CITY_BASE_DOMAINS)
+        if apex is not None:
+            # www shows the apex's page, so it defers to the apex's sitemap.
+            if _hostname(host) != apex:
+                return HttpResponseRedirect(f'{scheme}://{apex}/sitemap.xml')
+            urls = [f'{scheme}://{apex}/'] + [
+                f'{scheme}://{other.slug}.{apex}/'
+                for other in City.objects.filter(is_active=True)
+            ]
+            return _urlset(urls)
 
         # A host naming no city we serve shows an apology, not a page worth
         # indexing - offering a sitemap for it would invite exactly that.
@@ -102,19 +102,14 @@ class SitemapView(View):
                 content_type='text/plain; charset=utf-8',
             )
 
-        urls = [f'{scheme}://{host}{path}' for path in CITY_PATHS]
+        return _urlset([f'{scheme}://{host}{path}' for path in CITY_PATHS])
 
-        if city is not None and city.is_default:
-            for other in City.objects.filter(is_active=True):
-                if other.pk == city.pk:
-                    continue
-                urls.append(f'{scheme}://{_host_of(other, base)}/')
 
-        body = ['<?xml version="1.0" encoding="UTF-8"?>',
-                '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
-        for url in urls:
-            body.append(f'  <url><loc>{escape(url)}</loc></url>')
-        body.append('</urlset>')
-        body.append('')
-
-        return HttpResponse('\n'.join(body), content_type='application/xml; charset=utf-8')
+def _urlset(urls):
+    body = ['<?xml version="1.0" encoding="UTF-8"?>',
+            '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for url in urls:
+        body.append(f'  <url><loc>{escape(url)}</loc></url>')
+    body.append('</urlset>')
+    body.append('')
+    return HttpResponse('\n'.join(body), content_type='application/xml; charset=utf-8')

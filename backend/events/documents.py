@@ -21,7 +21,7 @@ from django.views import View
 
 from django.conf import settings
 
-from .middleware import canonical_host, scheme_for
+from .middleware import _hostname, canonical_host, hub_host, scheme_for
 from .models import City
 
 # A TEMPORARY redirect, not a permanent one, and that is a decision, not an
@@ -57,6 +57,12 @@ DESCRIPTION_CALENDAR_CITY = (
     'Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista '
     'imprez i praktisów, do subskrybowania w telefonie.'
 )
+# The map of cities on the apex. The count comes from the database, so a new
+# city in the admin panel reaches search results without a deployment.
+DESCRIPTION_HUB = (
+    'Imprezy i praktisy West Coast Swing w {count} miastach w Polsce '
+    '— kiedy, gdzie i ile zostało do startu.'
+)
 
 # The link preview image lives with the static pages on app.gdzienawesta.com,
 # which is where the generator that produces it deploys to. Referenced without
@@ -64,6 +70,10 @@ DESCRIPTION_CALENDAR_CITY = (
 # preview consumer caches by URL anyway, so the stamp would buy nothing here.
 OG_IMAGE = 'https://app.gdzienawesta.com/og-image.png'
 OG_IMAGE_ALT = 'Gdzie Na Westa? — Wydarzenia West Coast Swing w Polsce'
+
+# Where the map page takes the list of cities written in by the server, so a
+# crawler that never runs our JavaScript still finds a link to every city.
+CITY_LIST_MARKER = '<!-- cities:list -->'
 
 TITLE_TAG = re.compile(r'<title>.*?</title>', re.S)
 DESCRIPTION_TAG = re.compile(r'<meta name="description" content="[^"]*">')
@@ -94,8 +104,49 @@ def _escape(value: str) -> str:
                  .replace('>', '&gt;').replace('"', '&quot;'))
 
 
+def _preview_tags(url, title, description):
+    """The canonical address and the link preview, as one block for <head>.
+
+    The same tag set the static pages carry, so a link shared from either
+    property previews the same way. Title and description are the ones the
+    page was given, which means a link to a city subdomain names that city -
+    the whole reason these are built here and not injected by the edge, which
+    does not know the cities and must not learn them: a new city is an entry
+    in the admin panel, never a deployment.
+    """
+    return '\n    '.join([
+        f'<link rel="canonical" href="{url}">',
+        '<meta property="og:type" content="website">',
+        f'<meta property="og:site_name" content="{SITE_TITLE}">',
+        f'<meta property="og:title" content="{title}">',
+        f'<meta property="og:description" content="{description}">',
+        f'<meta property="og:url" content="{url}">',
+        f'<meta property="og:image" content="{OG_IMAGE}">',
+        '<meta property="og:image:type" content="image/png">',
+        '<meta property="og:image:width" content="1200">',
+        '<meta property="og:image:height" content="630">',
+        f'<meta property="og:image:alt" content="{OG_IMAGE_ALT}">',
+        '<meta property="og:locale" content="pl_PL">',
+        '<meta name="twitter:card" content="summary_large_image">',
+        f'<meta name="twitter:image" content="{OG_IMAGE}">',
+        f'<meta name="twitter:image:alt" content="{OG_IMAGE_ALT}">',
+    ])
+
+
+def _render(filename, title, description, head_tags):
+    """The file on disk with its title, description and extra <head> tags."""
+    page = _read(filename)
+    title = _escape(title)
+    description = _escape(description)
+    page = TITLE_TAG.sub(lambda _: f'<title>{title}</title>', page, count=1)
+    page = DESCRIPTION_TAG.sub(
+        lambda _: f'<meta name="description" content="{description}">',
+        page, count=1)
+    return page.replace(HEAD_END, f'    {head_tags(title, description)}\n{HEAD_END}', 1)
+
+
 class DocumentView(View):
-    """Base for the two pages. Subclasses say which file and how to title it."""
+    """Base for a city's two pages. Subclasses say which file and how to title it."""
 
     filename = ''
 
@@ -106,8 +157,8 @@ class DocumentView(View):
         raise NotImplementedError
 
     # The address this page keeps, whichever spelling the visitor arrived
-    # through. /calendar and /kalendarz are one page; so are the apex and the
-    # subdomain of the default city.
+    # through. /calendar and /kalendarz are one page; the default city's
+    # pages on the apex and www are its pages on its own subdomain.
     canonical_path = '/'
 
     def get(self, request):
@@ -126,61 +177,48 @@ class DocumentView(View):
         # reader a moment after the page appears.
         city_count = City.objects.filter(is_active=True).count()
 
-        page = _read(self.filename)
-        title = _escape(self.title_for(city, city_count))
-        description = _escape(self.description_for(city, city_count))
-
-        page = TITLE_TAG.sub(lambda _: f'<title>{title}</title>', page, count=1)
-        page = DESCRIPTION_TAG.sub(
-            lambda _: f'<meta name="description" content="{description}">',
-            page, count=1)
-
         # Written here rather than into the file: one static document serves
-        # every city, so a fixed canonical would point Łódź and Kraków at the
-        # apex. It used to be set by app.js, which meant a crawler saw it only
-        # if it ran our JavaScript.
+        # every city, so a fixed canonical would point Łódź and Kraków at one
+        # address. It used to be set by app.js, which meant a crawler saw it
+        # only if it ran our JavaScript.
         #
         # A host naming no city we serve gets noindex instead. That page is an
-        # apology with a list of the cities that do exist - worth showing to
+        # apology with a way to the cities that do exist - worth showing to
         # the person who typed the address, worth nothing in a search result,
         # and there is no honest canonical for it to point at. Its sitemap
         # already answers 404 for the same reason.
         if city is None:
-            tag = '<meta name="robots" content="noindex">'
+            def head_tags(title, description):
+                return '<meta name="robots" content="noindex">'
         else:
             host = request.get_host()
             url = f'{scheme_for(host)}://{host}{self.canonical_path}'
-            # The same tag set the static pages carry, so a link shared from
-            # either property previews the same way. Title and description are
-            # the ones computed above, which means a link to a city subdomain
-            # names that city - the whole reason these are built here and not
-            # injected by the edge, which does not know the cities and must not
-            # learn them: a new city is an entry in the admin panel, never a
-            # deployment.
-            tag = '\n    '.join([
-                f'<link rel="canonical" href="{url}">',
-                '<meta property="og:type" content="website">',
-                f'<meta property="og:site_name" content="{SITE_TITLE}">',
-                f'<meta property="og:title" content="{title}">',
-                f'<meta property="og:description" content="{description}">',
-                f'<meta property="og:url" content="{url}">',
-                f'<meta property="og:image" content="{OG_IMAGE}">',
-                '<meta property="og:image:type" content="image/png">',
-                '<meta property="og:image:width" content="1200">',
-                '<meta property="og:image:height" content="630">',
-                f'<meta property="og:image:alt" content="{OG_IMAGE_ALT}">',
-                '<meta property="og:locale" content="pl_PL">',
-                '<meta name="twitter:card" content="summary_large_image">',
-                f'<meta name="twitter:image" content="{OG_IMAGE}">',
-                f'<meta name="twitter:image:alt" content="{OG_IMAGE_ALT}">',
-            ])
-        page = page.replace(HEAD_END, f'    {tag}\n{HEAD_END}', 1)
 
+            def head_tags(title, description):
+                return _preview_tags(url, title, description)
+
+        page = _render(self.filename,
+                       self.title_for(city, city_count),
+                       self.description_for(city, city_count),
+                       head_tags)
         return HttpResponse(page, content_type='text/html; charset=utf-8')
 
 
 class HomeView(DocumentView):
+    """A city's page of upcoming events - or, on the apex, the map of cities."""
+
     filename = 'index.html'
+
+    def get(self, request):
+        host = request.get_host()
+        apex = hub_host(host, settings.CITY_BASE_DOMAINS)
+        if apex is None:
+            return super().get(request)
+        # www is the same page under a name we do not publish.
+        if _hostname(host) != apex:
+            return HttpResponseRedirect(f'{scheme_for(host)}://{apex}/',
+                                        status=REDIRECT_STATUS)
+        return _hub(request, apex)
 
     def title_for(self, city, city_count):
         if city is None or city_count < 2:
@@ -209,3 +247,28 @@ class CalendarPageView(DocumentView):
         if city is None:
             return DESCRIPTION_CALENDAR
         return DESCRIPTION_CALENDAR_CITY.format(city=city.name)
+
+
+def _hub(request, apex):
+    """The map of cities on the apex: cities.html with the list written in.
+
+    The list is the page's index, and the map only draws it, so it has to be
+    there without JavaScript: until now the subdomains were linked from nowhere
+    in the served HTML - the footer is built by a script - and a crawler found
+    them only through the sitemap.
+    """
+    cities = list(City.objects.filter(is_active=True))
+    scheme = scheme_for(request.get_host())
+    items = '\n'.join(
+        f'<li><a href="{scheme}://{city.slug}.{apex}/">{_escape(city.name)}</a></li>'
+        for city in cities
+    )
+    # One city is not a map worth counting.
+    description = (DESCRIPTION_HUB.format(count=len(cities))
+                   if len(cities) > 1 else DESCRIPTION)
+    url = f'{scheme}://{apex}/'
+
+    page = _render('cities.html', SITE_TITLE, description,
+                   lambda title, description: _preview_tags(url, title, description))
+    page = page.replace(CITY_LIST_MARKER, items, 1)
+    return HttpResponse(page, content_type='text/html; charset=utf-8')
