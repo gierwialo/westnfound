@@ -342,16 +342,32 @@ class CitiesEndpointTests(TestCase):
     def get(self, host='gdzienawesta.com'):
         return self.client.get('/api/cities/', HTTP_HOST=host).json()
 
-    def test_default_city_links_to_the_apex(self):
+    def test_every_city_links_to_its_subdomain_the_default_one_too(self):
+        """The apex is the map, so linking Warsaw there would lead back to it."""
         by_slug = {c['slug']: c for c in self.get()['cities']}
-        self.assertEqual(by_slug['warszawa']['url'], '//gdzienawesta.com')
+        self.assertEqual(by_slug['warszawa']['url'], '//warszawa.gdzienawesta.com')
         self.assertEqual(by_slug['lodz']['url'], '//lodz.gdzienawesta.com')
 
     def test_links_stay_on_the_domain_the_visitor_is_using(self):
         """Working on lvh.me must not produce links out to production."""
         by_slug = {c['slug']: c for c in self.get(host='lodz.lvh.me')['cities']}
         self.assertEqual(by_slug['lodz']['url'], '//lodz.lvh.me')
-        self.assertEqual(by_slug['warszawa']['url'], '//lvh.me')
+        self.assertEqual(by_slug['warszawa']['url'], '//warszawa.lvh.me')
+
+    def test_coordinates_are_handed_over(self):
+        self.lodz.latitude, self.lodz.longitude = 51.7592, 19.456
+        self.lodz.save()
+        by_slug = {c['slug']: c for c in self.get()['cities']}
+        self.assertEqual(
+            (by_slug['lodz']['latitude'], by_slug['lodz']['longitude']),
+            (51.7592, 19.456),
+        )
+
+    def test_a_city_without_coordinates_is_still_listed(self):
+        """It belongs on the list; only the dot on the map is missing."""
+        by_slug = {c['slug']: c for c in self.get()['cities']}
+        self.assertIsNone(by_slug['warszawa']['latitude'])
+        self.assertIsNone(by_slug['warszawa']['longitude'])
 
     def test_current_city_is_marked(self):
         data = self.get(host='lodz.gdzienawesta.com')
@@ -376,6 +392,71 @@ class CitiesEndpointTests(TestCase):
             [c['name'] for c in self.get()['cities']],
             ['Gdańsk', 'Łódź', 'Warszawa'],
         )
+
+
+class CitiesNextTests(TestCase):
+    """The second line of every row in the map's list."""
+
+    def setUp(self):
+        City.objects.create(name='Warszawa', calendar_id='w@example.com', is_default=True)
+        City.objects.create(name='Łódź', calendar_id='l@example.com')
+        City.objects.create(name='Gdańsk', calendar_id='g@example.com', is_active=False)
+
+    def get(self, next_events, host='gdzienawesta.com'):
+        asked = []
+
+        def fake(_service, calendar_id):
+            asked.append(calendar_id)
+            return next_events.get(calendar_id)
+
+        with patch.object(GoogleCalendarService, 'get_next_event', fake):
+            response = self.client.get('/api/cities/next/', HTTP_HOST=host)
+        self.assertEqual(response.status_code, 200)
+        return response.json(), asked
+
+    def test_every_active_city_gets_its_own_next_event(self):
+        data, asked = self.get({
+            'w@example.com': {
+                'title': 'Praktis', 'start': '2026-09-26T19:00:00+02:00',
+                'end': '2026-09-26T22:00:00+02:00', 'description': 'long',
+                'location': 'Somewhere', 'calendar_id': 'w@example.com',
+            },
+            'l@example.com': {
+                'title': 'Impreza', 'start': '2026-10-10T21:00:00+02:00',
+                'end': '2026-10-11T01:00:00+02:00', 'description': '',
+                'location': '', 'calendar_id': 'l@example.com',
+            },
+        })
+        self.assertEqual(sorted(asked), ['l@example.com', 'w@example.com'])
+        self.assertEqual(data['cities'], [
+            {'slug': 'lodz', 'event': {
+                'title': 'Impreza', 'start': '2026-10-10T21:00:00+02:00',
+                'end': '2026-10-11T01:00:00+02:00',
+            }},
+            {'slug': 'warszawa', 'event': {
+                'title': 'Praktis', 'start': '2026-09-26T19:00:00+02:00',
+                'end': '2026-09-26T22:00:00+02:00',
+            }},
+        ])
+
+    def test_a_quiet_city_is_listed_with_no_event(self):
+        """Not left out: the list shows the city and no second line."""
+        data, _ = self.get({})
+        self.assertEqual(
+            data['cities'],
+            [{'slug': 'lodz', 'event': None}, {'slug': 'warszawa', 'event': None}],
+        )
+
+    def test_the_answer_is_the_same_on_every_host(self):
+        """Even one naming no city: the map is everyone's way in."""
+        on_apex, _ = self.get({})
+        on_unknown, _ = self.get({}, host='krakow.gdzienawesta.com')
+        self.assertEqual(on_apex, on_unknown)
+
+    def test_no_cities_at_all_is_an_empty_list_not_an_error(self):
+        City.objects.all().delete()
+        data, _ = self.get({})
+        self.assertEqual((data['count'], data['cities']), (0, []))
 
 
 class CoordinatesTests(TestCase):

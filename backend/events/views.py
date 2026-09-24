@@ -1,3 +1,4 @@
+from concurrent.futures import ThreadPoolExecutor
 from urllib.parse import quote
 
 from django.http import HttpResponse, HttpResponseNotFound, JsonResponse
@@ -206,7 +207,7 @@ class CalendarInfoView(View):
 
 
 class CitiesView(View):
-    """The cities we serve, for the footer and the unknown-city page."""
+    """The cities we serve, for the map, the footer and the unknown-city page."""
 
     def get(self, request):
         from django.conf import settings
@@ -222,15 +223,17 @@ class CitiesView(View):
 
         cities = []
         for city in City.objects.filter(is_active=True):
-            # The default city keeps the apex as its address; the rest live on
-            # their own subdomain. Links are protocol-relative on purpose:
-            # Cloudflare terminates TLS, so the origin always sees plain http
-            # and would otherwise hand out http:// links on an https page.
-            host = base if city.is_default else f'{city.slug}.{base}'
+            # Every city on its own subdomain, the default one too: the apex
+            # is the map now, not Warsaw. Links are protocol-relative on
+            # purpose: Cloudflare terminates TLS, so the origin always sees
+            # plain http and would otherwise hand out http:// links on an
+            # https page.
             cities.append({
                 'name': city.name,
                 'slug': city.slug,
-                'url': f'//{host}',
+                'url': f'//{city.slug}.{base}',
+                'latitude': city.latitude,
+                'longitude': city.longitude,
                 'is_current': current is not None and city.pk == current.pk,
             })
 
@@ -239,4 +242,46 @@ class CitiesView(View):
             'cities': cities,
             'count': len(cities),
             'current': current.slug if current else None,
+        })
+
+
+class CitiesNextView(View):
+    """The next event of every city, for the second line of the map's list.
+
+    Separate from /api/cities/ because it is the slow half: the names can be
+    on the page at once, and this fills in behind them. It answers the same on
+    every host, because the list it feeds is the same everywhere.
+    """
+
+    def get(self, request):
+        from .models import City
+
+        cities = list(City.objects.filter(is_active=True))
+
+        # In parallel, because with a cold cache each calendar is a request to
+        # Google of up to ten seconds, and there are ten of them. With a warm
+        # one the threads only parse. get_next_event() never touches the
+        # database, so the workers need no connection of their own.
+        service = GoogleCalendarService()
+        with ThreadPoolExecutor(max_workers=max(len(cities), 1)) as pool:
+            events = list(pool.map(
+                lambda city: service.get_next_event(city.calendar_id), cities
+            ))
+
+        return JsonResponse({
+            'success': True,
+            'count': len(cities),
+            # A city without an upcoming event, or whose calendar did not
+            # answer, gets null: the list shows it without a second line.
+            'cities': [
+                {
+                    'slug': city.slug,
+                    'event': event and {
+                        'title': event['title'],
+                        'start': event['start'],
+                        'end': event['end'],
+                    },
+                }
+                for city, event in zip(cities, events)
+            ],
         })
