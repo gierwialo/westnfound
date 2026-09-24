@@ -136,7 +136,8 @@ class CalendarFeedView(View):
         if city is None:
             return HttpResponseNotFound('No city is served at this address\n')
 
-        feed, is_stale = CalendarFeedService().get(city.calendar_id)
+        service = CalendarFeedService()
+        feed, is_stale = service.get(city.calendar_id)
         if feed is None:
             # No copy at all, fresh or stale. Saying so beats answering with
             # an empty calendar, which a subscriber's app would take as "every
@@ -156,6 +157,13 @@ class CalendarFeedView(View):
             # Invisible to subscribers, but it turns "did the feed update?"
             # into something a single curl can answer.
             response['X-Feed-Stale'] = '1'
+        fetched_at = service.fetched_at(city.calendar_id)
+        if fetched_at is not None:
+            # For the status page: when this copy left Google, in UTC. Not
+            # Last-Modified, which would invite conditional requests from
+            # calendar apps and answer them with a time that is ours, not
+            # the calendar's.
+            response['X-Feed-Fetched'] = fetched_at.strftime('%Y-%m-%dT%H:%M:%SZ')
         return response
 
 
