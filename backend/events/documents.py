@@ -38,21 +38,24 @@ FRONTEND_DIR = Path(os.environ.get('FRONTEND_DIR', '/frontend'))
 # matching; without it this file would be a second, quietly diverging copy.
 SITE_TITLE = 'Gdzie na Westa?'
 CALENDAR_TITLE = 'Kalendarz'
+#
+# Practices, not workshops: the calendars are asked not to carry workshops,
+# so promising them in a search result promised what the page does not show.
 DESCRIPTION = (
-    'Najbliższe imprezy i warsztaty West Coast Swing '
+    'Najbliższe imprezy i praktisy West Coast Swing '
     '— data, miejsce i odliczanie do startu.'
 )
 DESCRIPTION_CITY = (
-    'Najbliższe imprezy i warsztaty West Coast Swing w mieście {city} '
+    'Najbliższe imprezy i praktisy West Coast Swing w mieście {city} '
     '— data, miejsce i odliczanie do startu.'
 )
 DESCRIPTION_CALENDAR = (
-    'Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, '
+    'Kalendarz wydarzeń West Coast Swing — pełna lista imprez i praktisów, '
     'do subskrybowania w telefonie.'
 )
 DESCRIPTION_CALENDAR_CITY = (
     'Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista '
-    'imprez i warsztatów, do subskrybowania w telefonie.'
+    'imprez i praktisów, do subskrybowania w telefonie.'
 )
 
 # The link preview image lives with the static pages on app.gdzienawesta.com,

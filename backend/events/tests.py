@@ -687,6 +687,13 @@ class DocumentTests(TestCase):
         _, _, lodz = self._head('/', 'lodz.gdzienawesta.com')
         self.assertNotEqual(apex, lodz)
 
+    def test_no_description_promises_workshops(self):
+        """The calendars are asked not to carry them."""
+        for path, host in (('/', 'gdzienawesta.com'), ('/', 'lodz.gdzienawesta.com'),
+                           ('/kalendarz', 'lodz.gdzienawesta.com')):
+            _, description, _ = self._head(path, host)
+            self.assertNotIn('warsztat', description, host + path)
+
     def test_a_single_city_is_not_named(self):
         City.objects.filter(slug='lodz').delete()
         title, description, _ = self._head('/', 'gdzienawesta.com')

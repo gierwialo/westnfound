@@ -4,10 +4,10 @@ const translations = {
 
         // Shown to search engines, not on the page. {city} is filled in only
         // when more than one city exists - see updateDescription() in app.js.
-        metaDescription: "Najbliższe imprezy i warsztaty West Coast Swing — data, miejsce i odliczanie do startu.",
-        metaDescriptionCity: "Najbliższe imprezy i warsztaty West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
-        metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
-        metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
+        metaDescription: "Najbliższe imprezy i praktisy West Coast Swing — data, miejsce i odliczanie do startu.",
+        metaDescriptionCity: "Najbliższe imprezy i praktisy West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
+        metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
+        metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
 
         // Home page
         upcoming: "Najbliższe",
@@ -92,10 +92,10 @@ const translations = {
 
         // Shown to search engines, not on the page. {city} is filled in only
         // when more than one city exists - see updateDescription() in app.js.
-        metaDescription: "Upcoming West Coast Swing parties and workshops - date, venue and a countdown to the start.",
-        metaDescriptionCity: "Upcoming West Coast Swing parties and workshops in {city} - date, venue and a countdown to the start.",
-        metaDescriptionCalendar: "West Coast Swing event calendar - every party and workshop, ready to subscribe to on your phone.",
-        metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and workshop, ready to subscribe to on your phone.",
+        metaDescription: "Upcoming West Coast Swing parties and practices - date, venue and a countdown to the start.",
+        metaDescriptionCity: "Upcoming West Coast Swing parties and practices in {city} - date, venue and a countdown to the start.",
+        metaDescriptionCalendar: "West Coast Swing event calendar - every party and practice, ready to subscribe to on your phone.",
+        metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and practice, ready to subscribe to on your phone.",
 
         // Home page
         upcoming: "Upcoming",
