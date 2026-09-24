@@ -161,3 +161,35 @@ test('the page source never carries the support address as text', () => {
     const source = require('node:fs').readFileSync(require.resolve('../../frontend/model.js'), 'utf8');
     assert.doesNotMatch(source, /support@gdzienawesta/);
 });
+
+// --- The map of cities and the way back to it ----------------------------------
+
+test('the map is on the apex of whatever domain the page is on', () => {
+    assert.equal(model.hubHref('lodz.gdzienawesta.com'), '//gdzienawesta.com/');
+    assert.equal(model.hubHref('gdansk.gdzienawesta.com'), '//gdzienawesta.com/');
+    assert.equal(model.hubHref('lodz.lvh.me'), '//lvh.me/');
+    // Nowhere better to go than this host's own front page.
+    assert.equal(model.hubHref('localhost'), '/');
+    assert.equal(model.hubHref('127.0.0.1'), '/');
+});
+
+test('the city cookie is set for the whole domain, from the city\'s own address only', () => {
+    assert.equal(
+        model.cityCookie('lodz.gdzienawesta.com', 'lodz', true),
+        'gnw_city=lodz; Domain=gdzienawesta.com; Path=/; Max-Age=31536000; SameSite=Lax; Secure');
+    assert.equal(
+        model.cityCookie('lodz.lvh.me', 'lodz', false),
+        'gnw_city=lodz; Domain=lvh.me; Path=/; Max-Age=31536000; SameSite=Lax');
+    // The apex, a host of another city, and a host with no city in it.
+    assert.equal(model.cityCookie('gdzienawesta.com', 'warszawa', true), null);
+    assert.equal(model.cityCookie('krakow.gdzienawesta.com', 'lodz', true), null);
+    assert.equal(model.cityCookie('localhost', 'warszawa', false), null);
+});
+
+test('the city is read back from the cookies, and nothing else is', () => {
+    assert.equal(model.cityFromCookies('_ga=GA1.1; gnw_city=krakow; x=1'), 'krakow');
+    assert.equal(model.cityFromCookies('gnw_city=lodz'), 'lodz');
+    assert.equal(model.cityFromCookies('xgnw_city=lodz'), null);
+    assert.equal(model.cityFromCookies('gnw_city=<script>'), null);
+    assert.equal(model.cityFromCookies(''), null);
+});

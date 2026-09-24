@@ -7,9 +7,10 @@ Google Calendar. Runs at [gdzienawesta.com](https://gdzienawesta.com).
 
 ## What it does
 
-- **One city per subdomain.** The bare domain serves the default city;
-  `<city>.example.com` serves that city's events. An address that names no
-  configured city says so and lists the ones that exist.
+- **One city per subdomain.** `<city>.example.com` serves that city's
+  events. The bare domain is the way in: a map of Poland and a list of every
+  city with what is on next there, the links written into the page itself. An address that names no configured
+  city says so and lists the ones that exist.
 - **The next three events**, swipeable, with a live countdown and buttons to
   add the event to a calendar or navigate to the venue.
 - **`/kalendarz` and `/calendar`** show the city's whole calendar, and
@@ -34,8 +35,11 @@ the server's one address, so the alternative was traffic to Google that grew
 with the site's own popularity.
 
 Which city a request is for is decided from the `Host` header
-(`events/middleware.py`); an unrecognised host falls back to the default city,
-so hitting the server directly behaves the same as the bare domain.
+(`events/middleware.py`). The bare domain and an unrecognised host both
+resolve to the default city, so the API and the subscription feed there keep
+answering as they did before the bare domain became the list of cities; only
+its pages have moved, `/` to the list and `/kalendarz` to the default city's
+own subdomain.
 
 | Layer | Stack |
 |---|---|
@@ -63,7 +67,8 @@ Open the admin panel at `http://localhost/admin/` and add your first city:
 | **Name** | City name as displayed, diacritics and all |
 | **Slug** | Subdomain label, ASCII, used as `<slug>.example.com`. Filled in from the name; **changing it breaks every link already shared** |
 | **Calendar ID** | From Google Calendar → Settings → Integrate calendar |
-| **Is default** | The city served on the bare domain. Exactly one city has this |
+| **Coordinates** | Where the city sits on the map. Right-click it in Google Maps and click the numbers at the top of the menu, then paste: `50.0412, 21.9991`, latitude first. Optional; a city without them is listed without a dot |
+| **Is default** | The city behind the bare domain's older addresses: its feed, its API and `/kalendarz`, which now leads to this city's subdomain. Exactly one city has this |
 | **Is active** | Uncheck to hide a city without deleting it |
 
 The site is then at `http://localhost/`.

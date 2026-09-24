@@ -4,10 +4,12 @@ const translations = {
 
         // Shown to search engines, not on the page. {city} is filled in only
         // when more than one city exists - see updateDescription() in app.js.
-        metaDescription: "Najbliższe imprezy i warsztaty West Coast Swing — data, miejsce i odliczanie do startu.",
-        metaDescriptionCity: "Najbliższe imprezy i warsztaty West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
-        metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
-        metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i warsztatów, do subskrybowania w telefonie.",
+        metaDescription: "Najbliższe imprezy i praktisy West Coast Swing — data, miejsce i odliczanie do startu.",
+        metaDescriptionCity: "Najbliższe imprezy i praktisy West Coast Swing w mieście {city} — data, miejsce i odliczanie do startu.",
+        metaDescriptionCalendar: "Kalendarz wydarzeń West Coast Swing — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
+        metaDescriptionCalendarCity: "Kalendarz wydarzeń West Coast Swing w mieście {city} — pełna lista imprez i praktisów, do subskrybowania w telefonie.",
+        // The map of cities on gdzienawesta.com; {count} is how many there are.
+        metaDescriptionHub: "Imprezy i praktisy West Coast Swing w {count} miastach w Polsce — kiedy, gdzie i ile zostało do startu.",
 
         // Home page
         upcoming: "Najbliższe",
@@ -53,7 +55,7 @@ const translations = {
         loading: "Ładowanie wydarzenia...",
         footerCities: "Miasta:",
         unknownCityTitle: "Ojej, jeszcze nie wiemy, co się tam tańczy",
-        unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy:",
+        unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy, są na mapie.",
         addYourCity: "Dodaj swoje miasto",
         errorDefault: "Błąd pobierania wydarzenia",
         retryButton: "Spróbuj ponownie",
@@ -85,17 +87,44 @@ const translations = {
         languageName: "Polski",
 
         // Timezone
-        timezone: "Czasy wyświetlane w Twojej lokalnej strefie czasowej"
+        timezone: "Czasy wyświetlane w Twojej lokalnej strefie czasowej",
+
+        // The map of cities on gdzienawesta.com. {count} is the number of cities.
+        hubHeading: "Gdzie tańczysz westa?",
+        hubLead: "Imprezy i praktisy West Coast Swing z {count} miast w Polsce: kiedy, gdzie i ile zostało do startu. Wybierz swoje miasto.",
+        hubMine: "Twoje miasto",
+        hubMapCaption: "Dotknij miasta na mapie albo wybierz je z listy.",
+        hubMapCaptionWide: "Wybierz miasto na mapie albo z listy.",
+        hubCities: "Miasta",
+        hubToday: "dziś",
+        hubWeekdays: ["nd", "pn", "wt", "śr", "cz", "pt", "so"],
+        hubMonths: ["sty", "lut", "mar", "kwi", "maj", "cze", "lip", "sie", "wrz", "paź", "lis", "gru"],
+        hubHow: "Jak to działa",
+        hubStepCalendarsTitle: "Kalendarze miast",
+        hubStepCalendarsBody: "Imprezy i praktisy wpisują lokalni opiekunowie kalendarzy. Widzisz to samo, co oni, prosto z ich kalendarza.",
+        hubStepEventTitle: "Wszystko o imprezie",
+        hubStepEventBody: "Kiedy, gdzie i ile zostało do startu. Jednym dotknięciem dodasz imprezę do kalendarza albo wyznaczysz trasę.",
+        hubStepRemindTitle: "Przypomnienia",
+        hubStepRemindBody: "Aplikacja przypomni Ci o imprezie, a kalendarz miasta możesz zasubskrybować w telefonie.",
+        hubFree: "Bez konta, bez logowania, za darmo.",
+        hubAppTitle: "Mamy aplikację",
+        hubAppBody: "Gdzie na Westa? na iOS i Androida: wszystkie miasta w kieszeni i przypomnienie przed imprezą.",
+        hubAppStore: "Pobierz z",
+        hubGooglePlay: "Pobierz z",
+        hubAddTitle: "Nie ma Twojego miasta?",
+        hubAddBody: "Tańczycie westa gdzie indziej? Napisz do nas: pomożemy założyć kalendarz i dodamy miasto na mapę i do aplikacji.",
+        allCitiesOnMap: "Wszystkie miasta na mapie"
     },
     en: {
         title: "Where to West?",
 
         // Shown to search engines, not on the page. {city} is filled in only
         // when more than one city exists - see updateDescription() in app.js.
-        metaDescription: "Upcoming West Coast Swing parties and workshops - date, venue and a countdown to the start.",
-        metaDescriptionCity: "Upcoming West Coast Swing parties and workshops in {city} - date, venue and a countdown to the start.",
-        metaDescriptionCalendar: "West Coast Swing event calendar - every party and workshop, ready to subscribe to on your phone.",
-        metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and workshop, ready to subscribe to on your phone.",
+        metaDescription: "Upcoming West Coast Swing parties and practices - date, venue and a countdown to the start.",
+        metaDescriptionCity: "Upcoming West Coast Swing parties and practices in {city} - date, venue and a countdown to the start.",
+        metaDescriptionCalendar: "West Coast Swing event calendar - every party and practice, ready to subscribe to on your phone.",
+        metaDescriptionCalendarCity: "West Coast Swing event calendar for {city} - every party and practice, ready to subscribe to on your phone.",
+        metaDescriptionHub: "West Coast Swing parties and practices in {count} cities in Poland - when, where and how long until it starts.",
 
         // Home page
         upcoming: "Upcoming",
@@ -139,7 +168,7 @@ const translations = {
         loading: "Loading event...",
         footerCities: "Cities:",
         unknownCityTitle: "Oh! We don't know what's dancing there yet",
-        unknownCityBody: "Maybe nobody has told us yet. Cities we're already dancing in:",
+        unknownCityBody: "Maybe nobody has told us yet. The cities we're already dancing in are on the map.",
         addYourCity: "Add your city (in Polish)",
         errorDefault: "Error loading event",
         retryButton: "Try again",
@@ -171,6 +200,32 @@ const translations = {
         languageName: "English",
 
         // Timezone
-        timezone: "Times displayed in your local timezone"
+        timezone: "Times displayed in your local timezone",
+
+        // The map of cities on gdzienawesta.com. {count} is the number of cities.
+        hubHeading: "Where do you dance WCS?",
+        hubLead: "West Coast Swing parties and practices from {count} cities in Poland: when, where and how long until it starts. Pick your city.",
+        hubMine: "Your city",
+        hubMapCaption: "Tap a city on the map or pick it from the list.",
+        hubMapCaptionWide: "Pick a city on the map or from the list.",
+        hubCities: "Cities",
+        hubToday: "today",
+        hubWeekdays: ["sun", "mon", "tue", "wed", "thu", "fri", "sat"],
+        hubMonths: ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"],
+        hubHow: "How it works",
+        hubStepCalendarsTitle: "City calendars",
+        hubStepCalendarsBody: "Local calendar keepers add the parties and practices. You see what they see, straight from their calendar.",
+        hubStepEventTitle: "Everything about the event",
+        hubStepEventBody: "When, where and how long until it starts. One tap adds it to your calendar or opens directions.",
+        hubStepRemindTitle: "Reminders",
+        hubStepRemindBody: "The app reminds you before the event, and you can subscribe to a city’s calendar on your phone.",
+        hubFree: "No account, no sign-in, free.",
+        hubAppTitle: "We have an app",
+        hubAppBody: "Gdzie na Westa? on iOS and Android: every city in your pocket and a reminder before the event.",
+        hubAppStore: "Download on the",
+        hubGooglePlay: "Get it on",
+        hubAddTitle: "Your city isn’t here?",
+        hubAddBody: "Dancing West Coast Swing somewhere else? Get in touch: we’ll help set up a calendar and add your city to the map and the app.",
+        allCitiesOnMap: "All cities on the map"
     }
 };

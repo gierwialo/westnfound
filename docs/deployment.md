@@ -68,7 +68,8 @@ strong password.
 
 A host matching none of the base domains resolves to the default city, so
 direct hits on the server's address and health checks behave as they did
-before cities existed.
+before cities existed. The bare domain resolves to it too, for the API and the
+feed, but its home page is the list of cities (`frontend/cities.html`).
 
 ## Deploying an update
 

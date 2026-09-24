@@ -27,7 +27,8 @@ import re
 import sys
 from pathlib import Path
 
-ASSETS = ('styles.css', 'app.js', 'sheets.js', 'model.js', 'translations.js', 'calendar.js')
+ASSETS = ('styles.css', 'app.js', 'sheets.js', 'model.js', 'translations.js', 'calendar.js',
+          'cities.js', 'hub.js')
 
 
 def content_hash(path: Path) -> str:

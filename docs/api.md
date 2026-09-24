@@ -49,7 +49,7 @@ The single next event for this city. Same event shape, under `event`.
 
 ## GET /api/cities/
 
-Every active city, for the footer and the unknown-city page.
+Every active city, for the map, the footer and the unknown-city page.
 
 ```json
 {
@@ -57,8 +57,14 @@ Every active city, for the footer and the unknown-city page.
   "count": 2,
   "current": "lodz",
   "cities": [
-    { "name": "Łódź", "slug": "lodz", "url": "//lodz.gdzienawesta.com", "is_current": true },
-    { "name": "Warszawa", "slug": "warszawa", "url": "//gdzienawesta.com", "is_current": false }
+    {
+      "name": "Łódź", "slug": "lodz", "url": "//lodz.gdzienawesta.com",
+      "latitude": 51.7592, "longitude": 19.456, "is_current": true
+    },
+    {
+      "name": "Warszawa", "slug": "warszawa", "url": "//warszawa.gdzienawesta.com",
+      "latitude": null, "longitude": null, "is_current": false
+    }
   ]
 }
 ```
@@ -66,11 +72,47 @@ Every active city, for the footer and the unknown-city page.
 - Cities are ordered by slug. Because slugs are ASCII, that ordering matches
   Polish alphabetical order, which ordering by name would not: `Ł` sorts after
   `Z` byte-wise, so Łódź would come last.
-- The default city's `url` is the bare domain; the others get their subdomain.
+- Every city's `url` is its own subdomain, the default city's too: the bare
+  domain is the map of cities, not one of them.
 - URLs are protocol-relative on purpose. TLS is often terminated by a proxy,
   so the origin sees plain HTTP and would otherwise hand out `http://` links
   on an `https://` page.
+- `latitude` and `longitude` are both set or both `null`. A city without them
+  is still served and listed; it just has no dot on the map.
 - `current` is `null` when the host names no city we serve.
+
+## GET /api/cities/next/
+
+The next event of every active city, for the second line of each row in the
+map's list. Kept apart from `/api/cities/` because it is the slow half: the
+list of names can render at once and this fills in behind it. The answer is
+the same on every host.
+
+```json
+{
+  "success": true,
+  "count": 2,
+  "cities": [
+    {
+      "slug": "lodz",
+      "event": {
+        "title": "TONo de Baile - WCS",
+        "start": "2026-10-10T21:00:00+02:00",
+        "end": "2026-10-11T02:00:00+02:00"
+      }
+    },
+    { "slug": "warszawa", "event": null }
+  ]
+}
+```
+
+- Same order as `/api/cities/`.
+- `event` is `null` when the city has nothing coming up, or when its calendar
+  could not be read and no earlier copy is cached. Either way the city stays
+  in the list.
+- The calendars come from the same 15-minute cache as everything else. When
+  that is cold they are fetched in parallel, so the wait is the slowest
+  calendar, not the sum of them.
 
 ## GET /api/calendar/
 

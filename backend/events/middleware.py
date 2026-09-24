@@ -76,29 +76,38 @@ class CityMiddleware:
             request.get_host(), settings.CITY_BASE_DOMAINS
         )
         return self.get_response(request)
-def canonical_host(raw_host: str, city, base_domains):
-    """The one address this city should be reached at, or None if we are there.
+def hub_host(raw_host: str, base_domains):
+    """The apex this request is on when it asks for the map of cities, or None.
 
-    The default city lives on the apex, but its own subdomain answers too -
-    `resolve_city` finds it by slug like any other. Two addresses for one city
-    is a duplicate, and it only became one worth caring about when the site
-    started advertising its addresses in a sitemap.
-
-    `www` is the same case one step over: the same content under a name that
-    is not the one we publish.
+    The apex and www are where the map lives. They still resolve to the default
+    city, because the API and the subscription feed there keep answering as
+    Warsaw - subscribers and old versions of the app rely on those addresses.
+    Only the pages a person reads have moved.
     """
     host = _hostname(raw_host)
+    base = base_domain_for(raw_host, base_domains)
+    if base is not None and host in (base, f'www.{base}'):
+        return base
+    return None
+
+
+def canonical_host(raw_host: str, city, base_domains):
+    """The one address this city's pages live at, or None if we are there.
+
+    Every city lives on its own subdomain, the default city included. The
+    default city also answers on the apex and www, which used to be its home;
+    now that the apex is the map, those addresses hand its pages on to the
+    subdomain.
+    """
     base = base_domain_for(raw_host, base_domains)
     if base is None or city is None:
         # An unrecognised host or a subdomain naming no city we serve: nothing
         # to redirect to that would be more correct than where we already are.
         return None
-    # A city that is not the default is only ever reached through its own
-    # slug - resolve_city matches on nothing else - so it is already where it
-    # belongs. Only the default city has a second address.
-    if not city.is_default:
-        return None
-    return None if host == base else base
+    home = f'{city.slug}.{base}'
+    return None if _hostname(raw_host) == home else home
+
+
 # Hosts where https is not what the visitor uses. Everything else is public
 # and sits behind Cloudflare, which terminates TLS - and the origin has no way
 # to tell, because the edge layer overwrites X-Forwarded-Proto with its own

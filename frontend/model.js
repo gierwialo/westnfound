@@ -248,7 +248,54 @@
             + '&body=' + encodeURIComponent(mail.body);
     }
 
+    // --- The map of cities and the way back to it ----------------------------
+
+    // The name a city page stands on minus the city: lodz.gdzienawesta.com
+    // gives gdzienawesta.com. null where there is no city in the name - the
+    // apex, localhost, a bare IP address.
+    function baseDomain(hostname) {
+        if (/^\d+(\.\d+){3}$/.test(hostname) || hostname.indexOf(':') !== -1) return null;
+        const labels = hostname.split('.');
+        return labels.length > 2 ? labels.slice(1).join('.') : null;
+    }
+
+    /**
+     * Where the map of cities is, seen from a city page: the apex of the domain
+     * the reader is on, so work on lodz.lvh.me stays on lvh.me. Protocol-
+     * relative, like the city links from /api/cities/.
+     */
+    function hubHref(hostname) {
+        const base = baseDomain(hostname);
+        return base ? '//' + base + '/' : '/';
+    }
+
+    // How long the map remembers "your city": a year from the last visit.
+    const CITY_COOKIE_SECONDS = 365 * 24 * 60 * 60;
+
+    /**
+     * The cookie that lets the map offer a shortcut to the city last visited
+     * (decision M3), or null when this page is not on a city's own address.
+     * A cookie and not localStorage, because localStorage belongs to one
+     * subdomain and the map lives on another. It holds the city's slug and
+     * nothing else.
+     */
+    function cityCookie(hostname, slug, secure) {
+        const base = baseDomain(hostname);
+        if (!base || !slug || hostname !== slug + '.' + base) return null;
+        return 'gnw_city=' + slug + '; Domain=' + base + '; Path=/; Max-Age='
+            + CITY_COOKIE_SECONDS + '; SameSite=Lax' + (secure ? '; Secure' : '');
+    }
+
+    /** The slug in a document.cookie string, or null. */
+    function cityFromCookies(cookies) {
+        const match = /(?:^|;\s*)gnw_city=([a-z0-9-]+)/.exec(cookies || '');
+        return match ? match[1] : null;
+    }
+
     const api = {
+        hubHref: hubHref,
+        cityCookie: cityCookie,
+        cityFromCookies: cityFromCookies,
         relativeDayLabel: relativeDayLabel,
         splitLocation: splitLocation,
         stripHtml: stripHtml,

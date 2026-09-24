@@ -42,6 +42,8 @@
     --radio: #d1d5db;
     --radio-on: #4f46e5;
     --dim: rgba(15, 15, 30, 0.45);
+    --map-fill: #eef2ff;
+    --map-line: rgba(67, 56, 202, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -69,6 +71,8 @@
         --radio: #4b4b5c;
         --radio-on: #818cf8;
         --dim: rgba(0, 0, 0, 0.6);
+        --map-fill: #262a4d;
+        --map-line: rgba(199, 210, 254, 0.28);
     }
 }
 
@@ -919,6 +923,10 @@ html.sheet-open {
     border: 7px solid var(--radio-on);
 }
 
+.gap14 {
+    height: 14px;
+}
+
 .addrow {
     display: flex;
     align-items: center;
@@ -1000,6 +1008,9 @@ html.sheet-open {
         gap: 4px 32px;
     }
     .foot .links { margin-top: 0; }
+    /* A footer with no list of cities (the map page) has nothing to share
+       the row with. */
+    .foot .links:first-child { grid-column: 1 / -1; }
     .foot .fine { grid-column: 1 / -1; }
 }
 
@@ -1120,4 +1131,390 @@ html.sheet-open {
     .sub-card .actions .btn {
         flex: none;
     }
+}
+
+/* ==========================================================================
+   The map of cities on gdzienawesta.com (cities.html)
+
+   Two columns on a wide page, map and "add your city" beside the shortcut
+   and the list. On a phone the columns dissolve and `order` interleaves
+   them: shortcut, map, list, "add your city". The map is aria-hidden with
+   its pins out of the Tab order, so keyboard and screen reader follow the
+   list either way - the map only repeats its links.
+   ========================================================================== */
+.hub-head {
+    padding: 6px 4px 18px;
+}
+
+.hub-head h1 {
+    color: #fff;
+    font-size: 32px;
+    line-height: 38px;
+    font-weight: 800;
+    letter-spacing: -0.6px;
+}
+
+.hub-head p {
+    color: rgba(255, 255, 255, 0.93);
+    font-size: 16px;
+    line-height: 23px;
+    margin-top: 8px;
+    max-width: 620px;
+}
+
+.hub-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.hub-l,
+.hub-r {
+    display: contents;
+}
+
+.hub-mine { order: 1; margin-bottom: 14px; }
+.hub-map { order: 2; }
+.hub-list { order: 3; }
+.hub-add { order: 4; margin-top: 14px; }
+
+.label-grad .cnt {
+    font-size: 12.5px;
+    font-weight: 800;
+    background: rgba(255, 255, 255, 0.22);
+    border-radius: 10px;
+    padding: 1px 8px;
+    margin-left: 4px;
+}
+
+.hub-list .label-grad {
+    padding-top: 22px;
+}
+
+/* The one-tap way back for someone who has been here before (M3). */
+.mine {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px 12px 12px;
+    color: var(--text);
+}
+
+.mine .k {
+    display: block;
+    font-size: 11.5px;
+    font-weight: 800;
+    letter-spacing: 0.7px;
+    text-transform: uppercase;
+    color: var(--strong);
+    margin-bottom: 1px;
+}
+
+.mine .tt b {
+    font-size: 17px;
+}
+
+/* The map: an outline that scales, and pins placed in percent, so the dots
+   stay on their cities at any width while the labels keep their size. */
+.mapcard {
+    padding: 10px 10px 12px;
+}
+
+.map {
+    position: relative;
+    aspect-ratio: 1000 / 950;
+}
+
+.map svg.pl {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.map svg.pl path {
+    fill: var(--map-fill);
+    stroke: var(--map-line);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+}
+
+.pin {
+    position: absolute;
+    width: 0;
+    height: 0;
+    color: var(--text);
+}
+
+.pin .dot {
+    position: absolute;
+    left: -7px;
+    top: -7px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--radio-on);
+    box-shadow: 0 0 0 2.5px var(--card), 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .pin .dot { transition: transform 0.15s; }
+}
+
+.pin .lab {
+    position: absolute;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 15px;
+    padding: 3px 6px;
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--card) 86%, transparent);
+    /* Until hub.js has found it a place: measured, not shown. */
+    visibility: hidden;
+}
+
+/* Offsets from the dot's centre; cities.js lays labels out with the same. */
+.pin[data-side] .lab { visibility: visible; }
+.pin[data-side=r] .lab { left: 10px; top: 0; transform: translateY(-50%); }
+.pin[data-side=l] .lab { right: 10px; top: 0; transform: translateY(-50%); }
+.pin[data-side=t] .lab { bottom: 11px; left: 0; transform: translateX(-50%); }
+.pin[data-side=b] .lab { top: 11px; left: 0; transform: translateX(-50%); }
+.pin[data-side=tr] .lab { left: 4px; bottom: 5px; }
+.pin[data-side=tl] .lab { right: 4px; bottom: 5px; }
+.pin[data-side=br] .lab { left: 4px; top: 5px; }
+.pin[data-side=bl] .lab { right: 4px; top: 5px; }
+/* A label that fits nowhere; the dot stays and the city is on the list. */
+.pin[data-side=none] .lab { visibility: hidden; }
+
+/* The narrowest phones: a pixel less per label is what lets all ten fit. */
+.map.narrow .pin .lab {
+    font-size: 12px;
+    line-height: 14px;
+    padding: 2px 5px;
+}
+
+.pin.hl { z-index: 2; }
+.pin.hl .dot { transform: scale(1.35); }
+.pin.hl .lab { background: var(--radio-on); color: var(--card); }
+
+.map-cap {
+    font-size: 13.5px;
+    line-height: 18px;
+    color: var(--text2);
+    text-align: center;
+    padding: 8px 8px 0;
+}
+
+.map-cap .wide-only { display: none; }
+
+/* The list: the complete, accessible index. A row is the "Potem" card's tile
+   and two lines, in one card with hairlines. Every row draws its hairline
+   half a pixel above itself and the card clips the one on top of each
+   column, so two columns need no special case. */
+.clist {
+    overflow: hidden;
+}
+
+.crow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 66px;
+    padding: 8px 12px;
+    position: relative;
+    color: var(--text);
+}
+
+.crow::before {
+    content: "";
+    position: absolute;
+    top: -0.5px;
+    right: 0;
+    left: 70px;
+    height: 0.5px;
+    background: var(--border);
+}
+
+.crow .tt b { font-size: 16.5px; }
+.crow.hl { background: var(--tint); }
+.crow .skel.line { height: 12px; width: 55%; margin-top: 7px; }
+.tile.skel { background-size: 200% 100%; }
+.tile.today { background: var(--btn); }
+.tile.today small,
+.tile.today strong { color: #fff; }
+.tile.none strong { color: var(--text2); }
+
+/* How it works */
+.how {
+    padding: 6px 14px;
+}
+
+.how .step {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    position: relative;
+}
+
+.how .step + .step::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 48px;
+    height: 0.5px;
+    background: var(--border);
+}
+
+.how .step b {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 21px;
+}
+
+.how .step p {
+    font-size: 14.5px;
+    line-height: 20px;
+    color: var(--text2);
+    margin-top: 2px;
+}
+
+.how .free {
+    font-size: 14px;
+    color: var(--text2);
+    padding: 4px 0 10px 48px;
+}
+
+/* The app, and a city that is not here yet */
+.promo { padding: 18px; }
+.promo.app { margin-top: 14px; }
+
+.promo .hd {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.promo .appi {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: var(--g);
+    display: grid;
+    place-items: center;
+    flex: none;
+}
+
+.promo .appi svg {
+    width: 40px;
+    height: 40px;
+    fill: #fff;
+}
+
+.promo h3 {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+    line-height: 24px;
+}
+
+.promo p {
+    font-size: 14.5px;
+    line-height: 20px;
+    color: var(--text2);
+    margin-top: 10px;
+}
+
+.promo .btn.tonal { margin-top: 14px; }
+
+.stores {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.stores a {
+    flex: 1;
+    height: 46px;
+    border-radius: 12px;
+    background: var(--text);
+    color: var(--card);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.1;
+}
+
+.stores small { font-size: 10.5px; opacity: 0.8; }
+.stores b { font-size: 15px; }
+
+/* Medium page: still one column, the list in two. */
+@media (min-width: 600px) and (max-width: 839px) {
+    .clist {
+        columns: 2;
+        column-gap: 0;
+        column-rule: 0.5px solid var(--border);
+    }
+
+    .crow { break-inside: avoid; }
+}
+
+@media (min-width: 600px) {
+    .pin .lab { font-size: 14px; line-height: 16px; }
+}
+
+/* Wide page: map on the left, shortcut and list on the right. */
+@media (min-width: 840px) {
+    .hub-head { padding: 4px 4px 24px; }
+    .hub-head h1 { font-size: 40px; line-height: 46px; letter-spacing: -0.9px; }
+    .hub-head p { font-size: 17px; line-height: 25px; }
+
+    .hub-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 524fr) minmax(0, 480fr);
+        gap: 24px;
+        align-items: start;
+    }
+
+    .hub-l,
+    .hub-r {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .hub-add { margin-top: 24px; }
+    .hub-list .label-grad { padding-top: 0; }
+    .hub-mine + .hub-list .label-grad { padding-top: 6px; }
+    .label-grad.hub-how-h { padding-top: 24px; }
+
+    .map-cap .narrow-only { display: none; }
+    .map-cap .wide-only { display: inline; }
+
+    .crow { min-height: 60px; padding: 6px 14px 6px 12px; }
+
+    .how {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0 24px;
+        padding: 18px 20px;
+    }
+
+    .how .step { flex-direction: column; padding: 0; }
+    .how .step + .step::before { display: none; }
+    .how .free { grid-column: 1 / -1; padding: 14px 0 0; }
+
+    .promo.app {
+        margin-top: 24px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        gap: 0 28px;
+        align-items: center;
+    }
+
+    .promo.app p { grid-column: 1; margin-top: 8px; }
+    .promo.app .stores { grid-column: 2; grid-row: 1 / 3; margin-top: 0; }
 }

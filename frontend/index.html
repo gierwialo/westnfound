@@ -6,7 +6,7 @@
     <meta name="color-scheme" content="light dark">
     <!-- Baseline for a crawler that does not run our JavaScript.
          app.js rewrites it per city and per language once loaded. -->
-    <meta name="description" content="Najbliższe imprezy i warsztaty West Coast Swing — data, miejsce i odliczanie do startu.">
+    <meta name="description" content="Najbliższe imprezy i praktisy West Coast Swing — data, miejsce i odliczanie do startu.">
     <title>Gdzie na Westa? - Najbliższe Wydarzenie</title>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.17.3/dist/cdn.min.js" integrity="sha384-/7syvHwR9PpZbxOwOnlTTl4DepN0R0q9aiGAu+D0AcTtZXmrNw0zgp+TzUlPgDx2" crossorigin="anonymous"></script>
     <link rel="stylesheet" href="styles.css?v=95f7e879">
@@ -65,11 +65,9 @@
             <div class="em"><svg class="i"><use href="#i-map"/></svg></div>
             <h3 x-text="t('unknownCityTitle')"></h3>
             <p x-text="t('unknownCityBody')"></p>
-            <div class="chips" x-show="cities.length">
-                <template x-for="city in cities" :key="city.slug">
-                    <a class="chip" :href="city.url" x-text="city.name"></a>
-                </template>
-            </div>
+            <!-- The map, rather than a chip for every city: it has them all,
+                 with what is on next in each (M6). -->
+            <a class="btn primary" :href="hubUrl"><svg class="i"><use href="#i-map"/></svg><span x-text="t('allCitiesOnMap')"></span></a>
             <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html"><svg class="i"><use href="#i-plus"/></svg><span x-text="t('addYourCity')"></span></a>
         </div>
 
@@ -215,6 +213,14 @@
                     <div class="grab" aria-hidden="true"></div>
                     <h2 id="city-title" x-text="t('cityTitle')"></h2>
                     <p class="lead2" x-text="t('cityHint')"></p>
+                    <!-- Up to the map of every city (M6). The list stays below
+                         it: switching city in one tap beats finding it on a map. -->
+                    <a class="group linkrow" :href="hubUrl">
+                        <div class="sq"><svg class="i"><use href="#i-map"/></svg></div>
+                        <div class="tt"><b x-text="t('allCitiesOnMap')"></b><span x-text="hubUrl.replace(/^\/\/|\/$/g, '')"></span></div>
+                        <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+                    </a>
+                    <div class="gap14"></div>
                     <div class="group">
                         <template x-for="city in cities" :key="city.slug">
                             <a class="opt" :href="city.url" :aria-current="city.is_current ? 'true' : null">
