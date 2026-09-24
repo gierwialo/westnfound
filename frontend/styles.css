@@ -1008,6 +1008,9 @@ html.sheet-open {
         gap: 4px 32px;
     }
     .foot .links { margin-top: 0; }
+    /* A footer with no list of cities (the map page) has nothing to share
+       the row with. */
+    .foot .links:first-child { grid-column: 1 / -1; }
     .foot .fine { grid-column: 1 / -1; }
 }
 
