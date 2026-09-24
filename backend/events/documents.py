@@ -259,10 +259,7 @@ def _hub(request, apex):
     """
     cities = list(City.objects.filter(is_active=True))
     scheme = scheme_for(request.get_host())
-    items = '\n'.join(
-        f'<li><a href="{scheme}://{city.slug}.{apex}/">{_escape(city.name)}</a></li>'
-        for city in cities
-    )
+    items = '\n'.join(_hub_row(city, f'{scheme}://{city.slug}.{apex}/') for city in cities)
     # One city is not a map worth counting.
     description = (DESCRIPTION_HUB.format(count=len(cities))
                    if len(cities) > 1 else DESCRIPTION)
@@ -272,3 +269,18 @@ def _hub(request, apex):
                    lambda title, description: _preview_tags(url, title, description))
     page = page.replace(CITY_LIST_MARKER, items, 1)
     return HttpResponse(page, content_type='text/html; charset=utf-8')
+
+
+def _hub_row(city, url):
+    """One row of the list: a link with the city's name, and in data-* what
+    hub.js needs to put it on the map - no second request for the list."""
+    name = _escape(city.name)
+    coordinates = (
+        f' data-lat="{city.latitude}" data-lon="{city.longitude}"'
+        if city.latitude is not None and city.longitude is not None else ''
+    )
+    return (
+        f'<a class="crow" href="{url}" data-slug="{city.slug}" data-name="{name}"{coordinates}>'
+        f'<span class="tt"><b>{name}</b></span>'
+        '<span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span></a>'
+    )

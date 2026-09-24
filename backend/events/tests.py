@@ -786,7 +786,7 @@ class HubTests(TestCase):
         return response.content.decode()
 
     def _links(self, body):
-        return re.findall(r'<li><a href="([^"]+)">([^<]+)</a></li>', body)
+        return re.findall(r'<a class="crow" href="([^"]+)"[^>]*><span class="tt"><b>([^<]+)</b>', body)
 
     def test_the_apex_is_the_map_not_warsaw(self):
         body = self._page()
@@ -804,9 +804,17 @@ class HubTests(TestCase):
         City.objects.filter(slug='lodz').update(is_active=False)
         self.assertEqual([name for _, name in self._links(self._page())], ['Warszawa'])
 
+    def test_each_row_carries_what_the_map_needs(self):
+        """hub.js puts the dots on the map from these, without a request."""
+        City.objects.filter(slug='lodz').update(latitude=51.7592, longitude=19.456)
+        body = self._page()
+        self.assertIn('data-slug="lodz" data-name="Łódź" data-lat="51.7592" data-lon="19.456"', body)
+        # No coordinates: listed, with no dot to draw.
+        self.assertIn('data-slug="warszawa" data-name="Warszawa">', body)
+
     def test_a_city_name_is_escaped(self):
         City.objects.create(name='A & <B>', slug='ab', calendar_id='ab@example.com')
-        self.assertIn('>A &amp; &lt;B&gt;</a>', self._page())
+        self.assertIn('<b>A &amp; &lt;B&gt;</b>', self._page())
 
     def test_the_description_counts_the_cities(self):
         """A new city in the admin panel reaches search results by itself."""

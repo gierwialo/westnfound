@@ -8,8 +8,8 @@ Google Calendar. Runs at [gdzienawesta.com](https://gdzienawesta.com).
 ## What it does
 
 - **One city per subdomain.** `<city>.example.com` serves that city's
-  events. The bare domain is the way in: a list of every city, with a link to
-  each one written into the page itself. An address that names no configured
+  events. The bare domain is the way in: a map of Poland and a list of every
+  city with what is on next there, the links written into the page itself. An address that names no configured
   city says so and lists the ones that exist.
 - **The next three events**, swipeable, with a live countdown and buttons to
   add the event to a calendar or navigate to the venue.
