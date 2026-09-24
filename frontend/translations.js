@@ -55,7 +55,7 @@ const translations = {
         loading: "Ładowanie wydarzenia...",
         footerCities: "Miasta:",
         unknownCityTitle: "Ojej, jeszcze nie wiemy, co się tam tańczy",
-        unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy:",
+        unknownCityBody: "Może po prostu nikt nam jeszcze nie powiedział. Miasta, w których już tańczymy, są na mapie.",
         addYourCity: "Dodaj swoje miasto",
         errorDefault: "Błąd pobierania wydarzenia",
         retryButton: "Spróbuj ponownie",
@@ -87,7 +87,9 @@ const translations = {
         languageName: "Polski",
 
         // Timezone
-        timezone: "Czasy wyświetlane w Twojej lokalnej strefie czasowej"
+        timezone: "Czasy wyświetlane w Twojej lokalnej strefie czasowej",
+
+        allCitiesOnMap: "Wszystkie miasta na mapie"
     },
     en: {
         title: "Where to West?",
@@ -142,7 +144,7 @@ const translations = {
         loading: "Loading event...",
         footerCities: "Cities:",
         unknownCityTitle: "Oh! We don't know what's dancing there yet",
-        unknownCityBody: "Maybe nobody has told us yet. Cities we're already dancing in:",
+        unknownCityBody: "Maybe nobody has told us yet. The cities we're already dancing in are on the map.",
         addYourCity: "Add your city (in Polish)",
         errorDefault: "Error loading event",
         retryButton: "Try again",
@@ -174,6 +176,8 @@ const translations = {
         languageName: "English",
 
         // Timezone
-        timezone: "Times displayed in your local timezone"
+        timezone: "Times displayed in your local timezone",
+
+        allCitiesOnMap: "All cities on the map"
     }
 };

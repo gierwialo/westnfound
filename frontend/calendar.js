@@ -11,6 +11,8 @@ function calendarPage() {
         timezone: 'Europe/Warsaw',
         googleUrl: '',
         copied: false,
+        // The map of cities, on the apex of whichever domain this page is on.
+        hubUrl: GnwModel.hubHref(location.hostname),
         // A month grid on a phone is a wall of coloured slivers; the agenda
         // view is the same calendar, readable. Which one applies is decided
         // once and only revisited when the window crosses the threshold, so
@@ -151,6 +153,10 @@ function calendarPage() {
                 }
 
                 this.city = data.city;
+                // For the map's "your city" shortcut, as on the home page.
+                const cookie = GnwModel.cityCookie(
+                    location.hostname, data.city.slug, location.protocol === 'https:');
+                if (cookie) document.cookie = cookie;
                 this.feedUrlFromApi = data.feed_url || '';
                 this.calendarId = data.calendar_id;
                 this.timezone = data.timezone;

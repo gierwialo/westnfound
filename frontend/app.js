@@ -17,6 +17,8 @@ function eventApp() {
         // change it under the reader.
         detail: null,
         shared: false,
+        // The map of cities, on the apex of whichever domain this page is on.
+        hubUrl: GnwModel.hubHref(location.hostname),
 
         REFRESH_MS: 5 * 60 * 1000,
         // A refresh usually fails because the network has just gone away with
@@ -142,6 +144,7 @@ function eventApp() {
                 const data = await response.json();
                 this.cities = data.cities || [];
                 this.updateTitle();
+                if (this.currentCity) rememberCity(this.currentCity.slug);
             } catch (err) {
                 // The footer and the unknown-city page degrade to nothing;
                 // never let this break the event card.
@@ -373,4 +376,12 @@ function eventApp() {
             }
         }
     };
+}
+
+// Tell the map of cities which city this reader last looked at, so it can
+// offer them a shortcut back (decision M3). Only from the city's own address:
+// the apex and a host naming no city have nothing to remember.
+function rememberCity(slug) {
+    const cookie = GnwModel.cityCookie(location.hostname, slug, location.protocol === 'https:');
+    if (cookie) document.cookie = cookie;
 }

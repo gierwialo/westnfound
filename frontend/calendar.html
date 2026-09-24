@@ -19,6 +19,7 @@
   <symbol id="i-calplus" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M16 3v4M8 3v4M3 10h18M12 13.5v5M9.5 16h5"/></symbol>
   <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
   <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></symbol>
@@ -61,11 +62,9 @@
             <div class="em"><svg class="i"><use href="#i-map"/></svg></div>
             <h3 x-text="t('unknownCityTitle')"></h3>
             <p x-text="t('unknownCityBody')"></p>
-            <div class="chips" x-show="cities.length">
-                <template x-for="otherCity in cities" :key="otherCity.slug">
-                    <a class="chip" :href="otherCity.url + '/' + t('calendarPath')" x-text="otherCity.name"></a>
-                </template>
-            </div>
+            <!-- The map, rather than a chip for every city: it has them all,
+                 with what is on next in each (M6). -->
+            <a class="btn primary" :href="hubUrl"><svg class="i"><use href="#i-map"/></svg><span x-text="t('allCitiesOnMap')"></span></a>
             <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html"><svg class="i"><use href="#i-plus"/></svg><span x-text="t('addYourCity')"></span></a>
         </div>
 
@@ -133,6 +132,14 @@
                     <div class="grab" aria-hidden="true"></div>
                     <h2 id="city-title" x-text="t('cityTitle')"></h2>
                     <p class="lead2" x-text="t('cityHint')"></p>
+                    <!-- Up to the map of every city (M6). The list stays below
+                         it: switching city in one tap beats finding it on a map. -->
+                    <a class="group linkrow" :href="hubUrl">
+                        <div class="sq"><svg class="i"><use href="#i-map"/></svg></div>
+                        <div class="tt"><b x-text="t('allCitiesOnMap')"></b><span x-text="hubUrl.replace(/^\/\/|\/$/g, '')"></span></div>
+                        <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
+                    </a>
+                    <div class="gap14"></div>
                     <div class="group">
                         <template x-for="otherCity in cities" :key="otherCity.slug">
                             <a class="opt" :href="otherCity.url + '/' + t('calendarPath')" :aria-current="otherCity.is_current ? 'true' : null">
@@ -148,6 +155,7 @@
 
     <script src="translations.js?v=a655ae4e"></script>
     <script src="sheets.js?v=0155d224"></script>
+    <script src="model.js?v=8c3f1b49"></script>
     <script src="calendar.js?v=757ce6f8"></script>
 <!-- slot:body-end -->
 </body>

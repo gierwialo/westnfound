@@ -919,6 +919,10 @@ html.sheet-open {
     border: 7px solid var(--radio-on);
 }
 
+.gap14 {
+    height: 14px;
+}
+
 .addrow {
     display: flex;
     align-items: center;
