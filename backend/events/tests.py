@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 
 import re
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone as dt_timezone
 from pathlib import Path
 
 import requests
@@ -296,6 +296,41 @@ class CalendarFeedTests(TestCase):
         with patch('events.services.requests.get', return_value=_google_says()):
             response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
         self.assertEqual(response.content, ICS)
+
+    def test_feed_says_when_it_was_fetched_from_google(self):
+        """The status page reads this to say "fetched 6 minutes ago"."""
+        before = timezone.now().replace(microsecond=0)
+        with patch('events.services.requests.get', return_value=_google_says()):
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        fetched = datetime.strptime(
+            response['X-Feed-Fetched'], '%Y-%m-%dT%H:%M:%SZ'
+        ).replace(tzinfo=dt_timezone.utc)
+        self.assertGreaterEqual(fetched, before)
+        self.assertLessEqual(fetched, timezone.now())
+
+    def test_a_stale_copy_keeps_the_time_of_its_fetch(self):
+        """Serving the last good copy must not pass it off as a new one."""
+        with patch('events.services.requests.get', return_value=_google_says()):
+            first = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        cache.delete('ics:fresh:warsawwestiesdance@gmail.com')
+        with patch('events.services.requests.get', side_effect=requests.Timeout()):
+            stale = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        self.assertEqual(stale['X-Feed-Stale'], '1')
+        self.assertEqual(stale['X-Feed-Fetched'], first['X-Feed-Fetched'])
+
+    def test_a_copy_cached_before_the_time_was_kept_still_serves(self):
+        """Copies from before this header existed live on for up to a week."""
+        cache.set('ics:fresh:warsawwestiesdance@gmail.com', ICS)
+        with patch('events.services.requests.get') as get:
+            response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
+
+        get.assert_not_called()
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content, ICS)
+        self.assertNotIn('X-Feed-Fetched', response)
 
 
 class CalendarInfoTests(TestCase):

@@ -40,6 +40,11 @@ class CalendarFeedService:
     The last good copy answers when Google does not. A feed that is minutes
     stale is a calendar nobody notices; a feed that is briefly missing is
     events disappearing from someone's phone.
+
+    When the copy was last fetched is kept beside it, under a key of its own,
+    so the status page can say "fetched from Google 6 minutes ago". A key of
+    its own rather than a new shape for the copy: copies cached before this
+    existed stay readable, and simply come without a time until they expire.
     """
 
     FRESH_SECONDS = 15 * 60
@@ -59,6 +64,11 @@ class CalendarFeedService:
         if body is not None:
             cache.set(fresh_key, body, self.FRESH_SECONDS)
             cache.set(last_good_key, body, self.LAST_GOOD_SECONDS)
+            cache.set(
+                f'ics:fetched:{calendar_id}',
+                datetime.now(timezone.utc).timestamp(),
+                self.LAST_GOOD_SECONDS,
+            )
             return body, False
 
         last_good = cache.get(last_good_key)
@@ -69,6 +79,18 @@ class CalendarFeedService:
             return last_good, True
 
         return None, False
+
+    def fetched_at(self, calendar_id: str) -> Optional[datetime]:
+        """When the copy that get() hands out was fetched from Google.
+
+        None when no fetch has been recorded, e.g. for a copy cached before
+        the time was kept. A fresh copy and the last good one always come
+        from the same fetch, so one time answers for both.
+        """
+        ts = cache.get(f'ics:fetched:{calendar_id}')
+        if ts is None:
+            return None
+        return datetime.fromtimestamp(ts, timezone.utc)
 
     def _fetch(self, calendar_id: str) -> Optional[bytes]:
         try:
