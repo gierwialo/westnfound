@@ -69,7 +69,7 @@ DESCRIPTION_HUB = (
 # the ?v= stamp those pages carry: this file cannot know the stamp, and every
 # preview consumer caches by URL anyway, so the stamp would buy nothing here.
 OG_IMAGE = 'https://app.gdzienawesta.com/og-image.png'
-OG_IMAGE_ALT = 'Gdzie Na Westa? — Wydarzenia West Coast Swing w Polsce'
+OG_IMAGE_ALT = 'Gdzie na Westa? — Wydarzenia West Coast Swing w Polsce'
 
 # Where the map page takes the list of cities written in by the server, so a
 # crawler that never runs our JavaScript still finds a link to every city.
