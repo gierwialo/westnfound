@@ -70,6 +70,7 @@ const translations = {
         footerThanks: "Podziękowania",
         footerSupport: "❤️ Wesprzyj projekt",
         footerStatus: "Stan serwisu",
+        footerPrivacy: "Prywatność i ciasteczka",
         calendarPath: "kalendarz",
 
         // Calendar page
@@ -184,6 +185,7 @@ const translations = {
         footerThanks: "Thanks",
         footerSupport: "❤️ Support the project",
         footerStatus: "Service status",
+        footerPrivacy: "Privacy and cookies",
         calendarPath: "calendar",
 
         // Calendar page
