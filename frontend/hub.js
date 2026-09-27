@@ -92,6 +92,11 @@ function hubApp() {
             document.head.querySelector('meta[name="description"]')?.setAttribute('content', description);
         },
 
+        // One click counted on our own server (track.js); a no-op elsewhere.
+        track(action, detail) {
+            if (typeof GnwTrack === 'function') GnwTrack(action, detail);
+        },
+
         t(key) {
             return translations[this.currentLang]?.[key] || key;
         },
