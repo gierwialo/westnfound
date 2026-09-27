@@ -39,6 +39,12 @@ MIDDLEWARE = [
     'events.middleware.CityMiddleware',
 ]
 
+# Other sites and the city subdomains get the origin (https://gdzienawesta.com/),
+# never the path or the query. Django's default, same-origin, sends nothing
+# across subdomains, so a visit to a city from the map on the top domain looked
+# like somebody typing the address.
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
 # Domains under which a subdomain names a city: lodz.gdzienawesta.com and,
 # for local work, lodz.lvh.me (*.lvh.me resolves to 127.0.0.1). Any other host
 # resolves to the default city, which is what the site did before cities.

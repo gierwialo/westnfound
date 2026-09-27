@@ -1193,3 +1193,12 @@ class SlotMarkerTests(TestCase):
         # it out means a page never gets that and the marker's addition twice.
         for name, html in self._pages():
             self.assertNotIn('<body>', html, name)
+
+
+class ReferrerPolicyTests(TestCase):
+    def test_cities_see_where_a_visit_came_from_but_not_the_path(self):
+        # same-origin (Django's default) sent nothing from the map on the top
+        # domain to a city subdomain, so the step from one to the other was
+        # invisible in every statistic.
+        response = self.client.get('/api/cities/')
+        self.assertEqual(response['Referrer-Policy'], 'strict-origin-when-cross-origin')
