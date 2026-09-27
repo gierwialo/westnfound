@@ -30,8 +30,8 @@
         <header class="topbar">
             <a class="brand" href="/"><span class="mark"><svg><use href="#i-dancer"/></svg></span><span x-text="t('title')">Gdzie na Westa?</span></a>
             <div class="lang" role="group" :aria-label="t('language')" x-cloak>
-                <button type="button" @click="setLanguage('pl')" :class="{ on: currentLang === 'pl' }" :aria-pressed="currentLang === 'pl'">PL</button>
-                <button type="button" @click="setLanguage('en')" :class="{ on: currentLang === 'en' }" :aria-pressed="currentLang === 'en'">EN</button>
+                <button type="button" @click="setLanguage('pl'); track('language', 'pl')" :class="{ on: currentLang === 'pl' }" :aria-pressed="currentLang === 'pl'">PL</button>
+                <button type="button" @click="setLanguage('en'); track('language', 'en')" :class="{ on: currentLang === 'en' }" :aria-pressed="currentLang === 'en'">EN</button>
             </div>
         </header>
 
@@ -53,7 +53,7 @@
                         <div class="map" x-ref="map" aria-hidden="true">
                             <svg class="pl" viewBox="0 0 1000 950"><path :d="outline"/></svg>
                             <template x-for="city in mapped" :key="city.slug">
-                                <a class="pin" :href="city.url" tabindex="-1" :class="{ hl: hl === city.slug }"
+                                <a class="pin" :href="city.url" tabindex="-1" :class="{ hl: hl === city.slug }" @click="track('map-pin', city.slug)"
                                    :style="`left:${city.pos.left}%;top:${city.pos.top}%`"
                                    @mouseenter="hl = city.slug" @mouseleave="hl = null"><span class="dot"></span><span class="lab" x-text="city.name"></span></a>
                             </template>
@@ -65,7 +65,7 @@
                 <div class="hub-add card promo">
                     <div class="hd"><span class="sq"><svg class="i"><use href="#i-plus"/></svg></span><h3 x-text="t('hubAddTitle')">Nie ma Twojego miasta?</h3></div>
                     <p x-text="t('hubAddBody')"></p>
-                    <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html"><svg class="i"><use href="#i-pin"/></svg><span x-text="t('addYourCity')">Dodaj swoje miasto</span></a>
+                    <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html" @click="track('add-city', 'hub')"><svg class="i"><use href="#i-pin"/></svg><span x-text="t('addYourCity')">Dodaj swoje miasto</span></a>
                 </div>
             </div>
 
@@ -75,7 +75,7 @@
                      to everyone. -->
                 <template x-if="mine">
                     <div class="hub-mine">
-                        <a class="card mine" :href="mine.url">
+                        <a class="card mine" :href="mine.url" @click="track('map-back', mine.slug)">
                             <template x-if="rowFor(mine.slug).tile"><div class="tile" :class="rowFor(mine.slug).tile.kind"><small x-text="rowFor(mine.slug).tile.top"></small><strong x-text="rowFor(mine.slug).tile.day"></strong></div></template>
                             <div class="tt"><small class="k" x-text="t('hubMine')"></small><b x-text="mine.name"></b><span x-show="rowFor(mine.slug).line" x-text="rowFor(mine.slug).line"></span></div>
                             <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
@@ -94,7 +94,7 @@
                     </div>
                     <div class="card clist" x-show="cities.length" x-cloak>
                         <template x-for="city in cities" :key="city.slug">
-                            <a class="crow" :href="city.url" :class="{ hl: hl === city.slug }"
+                            <a class="crow" :href="city.url" :class="{ hl: hl === city.slug }" @click="track('map-list', city.slug)"
                                @mouseenter="hl = city.slug" @mouseleave="hl = null" @focus="hl = city.slug" @blur="hl = null">
                                 <div class="tile skel" x-show="nextState === 'loading'" aria-hidden="true"></div>
                                 <template x-if="rowFor(city.slug).tile"><div class="tile" :class="rowFor(city.slug).tile.kind"><small x-text="rowFor(city.slug).tile.top"></small><strong x-text="rowFor(city.slug).tile.day"></strong></div></template>
@@ -123,8 +123,8 @@
             <div class="hd"><span class="appi"><svg><use href="#i-dancer"/></svg></span><h3 x-text="t('hubAppTitle')">Mamy aplikację</h3></div>
             <p x-text="t('hubAppBody')"></p>
             <div class="stores">
-                <a href="https://apps.apple.com/app/id6793976027" rel="noopener"><small x-text="t('hubAppStore')"></small><b>App Store</b></a>
-                <a href="https://play.google.com/store/apps/details?id=com.gdzienawesta" rel="noopener"><small x-text="t('hubGooglePlay')"></small><b>Google Play</b></a>
+                <a href="https://apps.apple.com/app/id6793976027" rel="noopener" @click="track('store', 'ios')"><small x-text="t('hubAppStore')"></small><b>App Store</b></a>
+                <a href="https://play.google.com/store/apps/details?id=com.gdzienawesta&amp;referrer=utm_source%3Dgdzienawesta%26utm_medium%3Dweb%26utm_campaign%3Dmap" rel="noopener" @click="track('store', 'android')"><small x-text="t('hubGooglePlay')"></small><b>Google Play</b></a>
             </div>
         </div>
 
@@ -132,7 +132,7 @@
         <footer class="foot">
             <div class="links">
                 <a href="https://app.gdzienawesta.com" target="_blank" rel="noopener" x-text="t('footerApp')"></a> &middot;
-                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" x-text="t('addYourCity')"></a> &middot;
+                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" @click="track('add-city', 'footer')" x-text="t('addYourCity')"></a> &middot;
                 <a href="https://app.gdzienawesta.com/thanks.html" target="_blank" rel="noopener" x-text="t('footerThanks')"></a> &middot;
                 <a href="https://app.gdzienawesta.com/support.html" target="_blank" rel="noopener" x-text="t('footerSupport')"></a>
             </div>
@@ -148,6 +148,7 @@
     <script src="translations.js?v=a655ae4e"></script>
     <script src="model.js?v=8c3f1b49"></script>
     <script src="cities.js"></script>
+    <script src="track.js"></script>
     <script src="hub.js"></script>
 <!-- slot:body-end -->
 </body>

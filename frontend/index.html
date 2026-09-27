@@ -39,8 +39,8 @@
         <header class="topbar">
             <a class="brand" href="/"><span class="mark"><svg><use href="#i-dancer"/></svg></span><span x-text="t('title')">Gdzie na Westa?</span></a>
             <div class="lang" role="group" :aria-label="t('language')">
-                <button type="button" @click="setLanguage('pl')" :class="{ on: currentLang === 'pl' }" :aria-pressed="currentLang === 'pl'">PL</button>
-                <button type="button" @click="setLanguage('en')" :class="{ on: currentLang === 'en' }" :aria-pressed="currentLang === 'en'">EN</button>
+                <button type="button" @click="setLanguage('pl'); track('language', 'pl')" :class="{ on: currentLang === 'pl' }" :aria-pressed="currentLang === 'pl'">PL</button>
+                <button type="button" @click="setLanguage('en'); track('language', 'en')" :class="{ on: currentLang === 'en' }" :aria-pressed="currentLang === 'en'">EN</button>
             </div>
         </header>
 
@@ -68,7 +68,7 @@
             <!-- The map, rather than a chip for every city: it has them all,
                  with what is on next in each (M6). -->
             <a class="btn primary" :href="hubUrl"><svg class="i"><use href="#i-map"/></svg><span x-text="t('allCitiesOnMap')"></span></a>
-            <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html"><svg class="i"><use href="#i-plus"/></svg><span x-text="t('addYourCity')"></span></a>
+            <a class="btn tonal" href="https://app.gdzienawesta.com/add-your-city.html" @click="track('add-city', 'empty')"><svg class="i"><use href="#i-plus"/></svg><span x-text="t('addYourCity')"></span></a>
         </div>
 
         <!-- Error -->
@@ -88,7 +88,7 @@
                 <button type="button" class="btn primary" x-show="cities.length > 1" @click="openSheet('city', $event)" aria-haspopup="dialog"><span x-text="t('changeCity')"></span></button>
                 <button type="button" class="btn tonal" @click="loadEvent()"><svg class="i"><use href="#i-refresh"/></svg><span x-text="t('refresh')"></span></button>
             </div>
-            <p class="under"><span x-text="t('keeperPrompt')"></span> <a href="https://app.gdzienawesta.com/add-your-city.html" x-text="t('keeperLink')"></a></p>
+            <p class="under"><span x-text="t('keeperPrompt')"></span> <a href="https://app.gdzienawesta.com/add-your-city.html" @click="track('add-city', 'keeper')" x-text="t('keeperLink')"></a></p>
         </div>
 
         <!-- The next event, and the two after it -->
@@ -121,7 +121,7 @@
             <section x-show="events.length > 1">
                 <h2 class="label-grad" x-text="t('later')"></h2>
                 <template x-for="next in events.slice(1)" :key="next.start + next.title">
-                    <button type="button" class="card mini" @click="openDetails(next, $event)" aria-haspopup="dialog">
+                    <button type="button" class="card mini" @click="openDetails(next, $event, 'next')" aria-haspopup="dialog">
                         <div class="tile"><small x-text="shortWeekday(next.start)"></small><strong x-text="dayOfMonth(next.start)"></strong></div>
                         <div class="tt"><b x-text="next.title"></b><span x-text="[timeOfDay(next.start), placeOf(next.location)].filter(Boolean).join(' · ')"></span></div>
                         <span class="chev"><svg class="i"><use href="#i-chev-r"/></svg></span>
@@ -141,7 +141,7 @@
             <div class="links">
                 <a :href="'/' + t('calendarPath')" x-text="t('footerCalendarDirect')"></a> &middot;
                 <a href="https://app.gdzienawesta.com" target="_blank" rel="noopener" x-text="t('footerApp')"></a> &middot;
-                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" x-text="t('addYourCity')"></a> &middot;
+                <a href="https://app.gdzienawesta.com/add-your-city.html" target="_blank" rel="noopener" @click="track('add-city', 'footer')" x-text="t('addYourCity')"></a> &middot;
                 <a href="https://app.gdzienawesta.com/thanks.html" target="_blank" rel="noopener" x-text="t('footerThanks')"></a> &middot;
                 <a href="https://app.gdzienawesta.com/support.html" target="_blank" rel="noopener" x-text="t('footerSupport')"></a>
             </div>
@@ -181,11 +181,11 @@
                         <div class="drow" x-show="detail.location">
                             <div class="ic"><svg class="i"><use href="#i-pin"/></svg></div>
                             <div class="tt"><b x-text="whereOf(detail).place"></b><span x-show="whereOf(detail).streetWithCity" x-text="whereOf(detail).streetWithCity"></span></div>
-                            <button type="button" class="tbtn" @click="openNavigation(detail)" x-text="t('actionDirections')"></button>
+                            <button type="button" class="tbtn" @click="openNavigation(detail, 'sheet')" x-text="t('actionDirections')"></button>
                         </div>
                     </div>
 
-                    <button type="button" class="btn primary" @click="addToCalendar(detail)"><svg class="i"><use href="#i-calplus"/></svg><span x-text="t('actionCalendar')"></span></button>
+                    <button type="button" class="btn primary" @click="addToCalendar(detail, 'sheet')"><svg class="i"><use href="#i-calplus"/></svg><span x-text="t('actionCalendar')"></span></button>
 
                     <div class="sub-h" x-show="description.text || description.facebook" x-text="t('description')"></div>
                     <div class="group" :class="{ 'top-gap': !(description.text || description.facebook) }">
@@ -194,7 +194,7 @@
                              without a url is an <a> with no href, which is plain text.
                              Keep the <p> on one line: its white-space keeps line breaks. -->
                         <template x-if="description.text"><p class="desc"><template x-for="(part, index) in description.parts" :key="index"><a :href="part.url" :target="part.url ? '_blank' : null" :rel="part.url ? 'noopener noreferrer' : null" x-text="part.text"></a></template></p></template>
-                        <a class="linkrow" x-show="description.facebook" :href="description.facebook?.url" target="_blank" rel="noopener noreferrer">
+                        <a class="linkrow" x-show="description.facebook" @click="track('facebook')" :href="description.facebook?.url" target="_blank" rel="noopener noreferrer">
                             <div class="fb" aria-hidden="true">f</div>
                             <div class="tt"><b x-text="t('facebookEvent')"></b></div>
                             <span class="chev"><svg class="i"><use href="#i-ext"/></svg></span>
@@ -223,7 +223,7 @@
                     <div class="gap14"></div>
                     <div class="group">
                         <template x-for="city in cities" :key="city.slug">
-                            <a class="opt" :href="city.url" :aria-current="city.is_current ? 'true' : null">
+                            <a class="opt" :href="city.url" @click="track('city-sheet', city.slug)" :aria-current="city.is_current ? 'true' : null">
                                 <span x-text="city.name"></span><span class="radio" :class="{ on: city.is_current }" aria-hidden="true"></span>
                             </a>
                         </template>
@@ -237,6 +237,7 @@
     <script src="translations.js?v=a655ae4e"></script>
     <script src="sheets.js?v=0155d224"></script>
     <script src="model.js?v=8c3f1b49"></script>
+    <script src="track.js"></script>
     <script src="app.js?v=5162a14f"></script>
 <!-- slot:body-end -->
 </body>

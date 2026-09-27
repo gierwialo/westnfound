@@ -290,8 +290,10 @@ function eventApp() {
             return new Date(dateString).toLocaleTimeString(this.locale, { hour: '2-digit', minute: '2-digit' });
         },
 
-        addToCalendar(event) {
+        // `from` says which button: the card on the page or the details sheet.
+        addToCalendar(event, from = 'card') {
             if (!event) return;
+            this.track('calendar', from);
 
             const startDate = new Date(event.start);
             const endDate = new Date(event.end);
@@ -314,17 +316,25 @@ function eventApp() {
             window.open(url, '_blank');
         },
 
-        openNavigation(event) {
+        openNavigation(event, from = 'card') {
             if (!event?.location) return;
+            this.track('directions', from);
 
             // Google Maps URL with navigation
             const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(event.location)}`;
             window.open(url, '_blank');
         },
 
+        // One click counted on our own server (track.js); a no-op elsewhere.
+        track(action, detail) {
+            if (typeof GnwTrack === 'function') GnwTrack(action, detail);
+        },
+
         // --- Sheets --------------------------------------------------------
 
-        openDetails(event, domEvent) {
+        // `from`: the main card, or one of the next events under it.
+        openDetails(event, domEvent, from = 'card') {
+            this.track('details', from);
             this.detail = event;
             this.openSheet('details', domEvent);
         },
@@ -359,6 +369,7 @@ function eventApp() {
         // The system share sheet where the browser has one; otherwise the
         // message goes to the clipboard, and the icon says so for two seconds.
         async share(event) {
+            this.track('share');
             if (!event || !this.currentCity) return;
             const text = GnwModel.shareMessage(
                 this.forModel(event), this.currentCity.slug, this.currentLang, translations[this.currentLang]);
