@@ -69,6 +69,7 @@ const translations = {
         footerApp: "Aplikacja na telefon",
         footerThanks: "Podziękowania",
         footerSupport: "❤️ Wesprzyj projekt",
+        footerStatus: "Stan serwisu",
         calendarPath: "kalendarz",
 
         // Calendar page
@@ -182,6 +183,7 @@ const translations = {
         footerApp: "Mobile app",
         footerThanks: "Thanks",
         footerSupport: "❤️ Support the project",
+        footerStatus: "Service status",
         calendarPath: "calendar",
 
         // Calendar page
