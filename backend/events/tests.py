@@ -287,6 +287,28 @@ class CalendarFeedTests(TestCase):
             response = self.client.get('/kalendarz.ics', HTTP_HOST='gdzienawesta.com')
         self.assertEqual(response.status_code, 502)
 
+    def test_a_city_with_nothing_ahead_gets_an_empty_list(self):
+        """Not a 404: the page has its own state for a quiet city."""
+        ended = timezone.now() - timedelta(days=1)
+        past = (
+            'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//EN\r\n'
+            'BEGIN:VEVENT\r\nUID:last-party\r\nDTSTAMP:20260101T000000Z\r\n'
+            f'DTSTART:{(ended - timedelta(hours=4)).strftime("%Y%m%dT%H%M%SZ")}\r\n'
+            f'DTEND:{ended.strftime("%Y%m%dT%H%M%SZ")}\r\n'
+            'SUMMARY:Last party\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n'
+        ).encode()
+        with patch('events.services.requests.get', return_value=_google_says(past)):
+            response = self.client.get('/api/next-events/', HTTP_HOST='lodz.gdzienawesta.com')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'success': True, 'events': [], 'count': 0})
+
+    def test_events_without_any_copy_of_the_calendar_are_an_error(self):
+        """Not the empty state, which would tell visitors nothing is planned."""
+        with patch('events.services.requests.get', side_effect=requests.Timeout()):
+            response = self.client.get('/api/next-events/', HTTP_HOST='lodz.gdzienawesta.com')
+        self.assertEqual(response.status_code, 502)
+        self.assertEqual(response.json()['error'], 'Calendar unavailable')
+
     def test_a_login_page_is_neither_served_nor_cached(self):
         """A calendar Google stopped publishing answers 200 with HTML."""
         with patch('events.services.requests.get', return_value=_google_says(b'<html>Sign in')):

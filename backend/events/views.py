@@ -81,12 +81,14 @@ class NextEventsView(View):
                 [city.calendar_id], limit
             )
 
-            if not events:
+            if events is None:
                 return JsonResponse({
-                    'error': 'No upcoming events',
-                    'message': 'No upcoming events found in calendars'
-                }, status=404)
+                    'error': 'Calendar unavailable',
+                    'message': 'The calendar could not be read'
+                }, status=502)
 
+            # A city with nothing planned is an answer, not an error: the page
+            # shows its empty state, and the status probes see a working site.
             return JsonResponse({
                 'success': True,
                 'events': events,
