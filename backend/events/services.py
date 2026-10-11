@@ -246,7 +246,7 @@ class GoogleCalendarService:
         all_events.sort(key=lambda x: x['start'])
         return all_events[0]
 
-    def get_next_events_from_multiple_calendars(self, calendar_ids: list, limit: int = 3) -> list:
+    def get_next_events_from_multiple_calendars(self, calendar_ids: list, limit: int = 3) -> Optional[list]:
         """
         Fetch the next N upcoming events from multiple calendars
 
@@ -255,9 +255,12 @@ class GoogleCalendarService:
             limit: Number of events to return (default: 3)
 
         Returns:
-            List of event dictionaries sorted by start time
+            List of event dictionaries sorted by start time, empty when the
+            calendars were read and have nothing ahead, or None when none of
+            them could be read at all
         """
         all_events = []
+        read_any = False
 
         for calendar_id in calendar_ids:
             try:
@@ -327,9 +330,16 @@ class GoogleCalendarService:
                             }
                             all_events.append(event_data)
 
+                read_any = True
+
             except Exception as e:
                 logger.error(f"Error fetching events from calendar {calendar_id}: {str(e)}", exc_info=True)
                 continue
+
+        # A city with nothing planned and a calendar that never arrived used to
+        # look the same, so the page could only call both an error.
+        if not read_any:
+            return None
 
         if not all_events:
             return []
