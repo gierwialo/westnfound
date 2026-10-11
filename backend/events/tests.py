@@ -387,6 +387,7 @@ class CalendarInfoTests(TestCase):
         self.assertEqual(response.json()['error'], 'Unknown city')
 
 
+@override_settings(CITY_BASE_DOMAINS=['gdzienawesta.com', 'lvh.me'])
 class CitiesEndpointTests(TestCase):
     """Feeds the footer and the unknown-city page."""
 
